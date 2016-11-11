@@ -74,7 +74,7 @@ main (int argc, char* argv[])
 	      osc_key_pressed (timeStamp, i);
 	    else
 	      osc_key_released (timeStamp, i);
-	    buf[i + 1] = state[i];
+	    state[i] = buf[i + 1];
 	  }
     }
 

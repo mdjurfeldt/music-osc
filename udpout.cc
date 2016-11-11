@@ -91,7 +91,7 @@ main (int args, char* argv[])
   setup->config ("stoptime", &stoptime);
 
   buf[0] = 4711.0;
-  buf[1] = stoptime;
+  buf[1] = stoptime - TIMESTEP;
   if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
     throw std::runtime_error ("udpout: failed to send start message");
   
