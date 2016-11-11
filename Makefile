@@ -1,7 +1,7 @@
 CXX ?= g++
 MPICXX ?= mpicxx
 
-CXXFLAGS ?= -g -O2
+CXXFLAGS ?= -g -O3
 
 .PHONY: all mpi server test
 
