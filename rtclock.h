@@ -132,6 +132,7 @@ RTClock::timespecFromTimeval (const struct timeval& tv) const
   struct timespec ts;
   ts.tv_sec = tv.tv_sec;
   ts.tv_nsec = 1000 * tv.tv_usec;
+  return ts;
 }
 
 #endif /* RTCLOCK_H */
