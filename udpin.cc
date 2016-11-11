@@ -39,7 +39,7 @@
 
 #define DELAY TIMESTEP
 
-#define SRV_IP "130.237.221.78"
+#define SRV_IP "127.0.0.1"
 #define PORT 9931
 
 #if 1
@@ -84,7 +84,7 @@ main (int argc, char* argv[])
   setup->config ("stoptime", &stoptime);
 
   // Setup socket
-  struct sockaddr_in si_me, si_other;
+  struct sockaddr_in si_other;
   int s, i;
   unsigned int slen=sizeof(si_other);
   int dataSize = nLocalVars * sizeof (real);
@@ -94,12 +94,15 @@ main (int argc, char* argv[])
   if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpin: couldn't create socket");
 
-  memset((char *) &si_me, 0, sizeof(si_me));
-  si_me.sin_family = AF_INET;
-  si_me.sin_port = htons (PORT);
-  if (inet_aton(SRV_IP, &si_other.sin_addr) == 0)
+  memset((char *) &si_other, 0, sizeof(si_other));
+  si_other.sin_family = AF_INET;
+  si_other.sin_port = htons (PORT);
+  if (inet_aton (SRV_IP, &si_other.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
+  if (sendto (s, "START", 6, 0, (struct sockaddr *) &si_other, slen) == -1)
+    throw std::runtime_error ("udpin: failed to send start message");
+  
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
 
   // Simulation loop

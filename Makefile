@@ -3,13 +3,15 @@ MPICXX ?= mpicxx
 
 CXXFLAGS ?= -g -O2
 
-.PHONY: all mpi server
+.PHONY: all mpi server test
 
-all: mpi server
+all: mpi server test
 
 server: udptoosc osctoudp
 
 mpi: udpin udpout
+
+test: simproxy
 
 udpin: udpin.cc
 	$(MPICXX) $(CXXFLAGS) -o udpin udpin.cc -lmusic
@@ -26,3 +28,5 @@ osctoudp: osctoudp.cc rtclock.o
 rtclock.o: rtclock.h rtclock.cpp
 	$(MPICXX) $(CXXFLAGS) -c rtclock.cpp
 
+simproxy: simproxy.cc
+	$(MPICXX) $(CXXFLAGS) -o simproxy simproxy.cc -lmusic

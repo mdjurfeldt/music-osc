@@ -27,7 +27,7 @@
 
 #define TIMESTEP 0.01
 #define DELAY 0.01
-#define SRV_IP "130.237.221.78"
+#define SRV_IP "127.0.0.1"
 #define PORT 9930
 
 #if 1
@@ -82,7 +82,7 @@ main (int args, char* argv[])
     
   // Declare where in memory to put data
   MUSIC::ArrayData dmap (data,
-			 MPI::DOUBLE,
+			 MPI_MYREAL,
 			 0,
 			 nLocalVars);
   wavedata->map (&dmap, 1, DELAY);

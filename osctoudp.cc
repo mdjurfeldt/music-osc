@@ -47,24 +47,32 @@ main (int argc, char* argv[])
   unsigned int slen = sizeof (si_other);
 
   if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    throw std::runtime_error ("udptoosc: couldn't create socket");
+    throw std::runtime_error ("osctoudp: couldn't create socket");
 
   memset ((char *) &si_me, 0, sizeof (si_me));
   si_me.sin_family = AF_INET;
   si_me.sin_port = htons(PORT);
   si_me.sin_addr.s_addr = htonl(INADDR_ANY);
   if (bind (s, (struct sockaddr *) &si_me, sizeof (si_me)) == -1)
-    throw std::runtime_error ("udptoosc: could bind socket to port");
+    throw std::runtime_error ("osctoudp: could bind socket to port");
 
   real buf[1 + VECTOR_DIM];
-  real state[VECTOR_DIM];
-  std::for_each (std::begin (state), std::end (state),
+
+  // Wait for start message
+  if (recvfrom (s, buf, 6, 0, (struct sockaddr *) &si_other, &slen) == -1)
+    throw std::runtime_error ("osctoudp: recvfrom()");
+  else if (strncmp (static_cast<char*> (static_cast<void*> (buf)),
+		    "START", 6)
+	   != 0)
+    throw std::runtime_error ("osctoudp: bogus start message");
+
+  std::for_each (std::begin (buf), std::end (buf),
 		 [] (real &x) { x = 0.0; });
 
   std::thread t {osc_events, &buf[1]};
   
-  constexpr int buflen = sizeof (buf);
   RTClock clock (TIMESTEP);
+  constexpr int buflen = sizeof (buf);
   while (true)
     {
       buf[0] = clock.steppedTime ();
