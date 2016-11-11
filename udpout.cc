@@ -85,7 +85,7 @@ main (int args, char* argv[])
 			 MPI_MYREAL,
 			 0,
 			 nLocalVars);
-  wavedata->map (&dmap, 1, DELAY);
+  wavedata->map (&dmap, DELAY, 1, false);
 
   double stoptime;
   setup->config ("stoptime", &stoptime);

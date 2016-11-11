@@ -44,7 +44,7 @@ main (int argc, char* argv[])
 			  MPI_MYREAL,
 			  0,
 			  VECTOR_DIM);
-  in->map (&inMap, 1, 0.0);
+  in->map (&inMap, 0.0, 1, false);
 
   real outBuf[VECTOR_DIM];
   MUSIC::ArrayData outMap (outBuf,
