@@ -63,7 +63,7 @@ main (int args, char* argv[])
 
   // Initialize UDP socket
   struct sockaddr_in si_other;
-  int s, i;
+  int s;
   unsigned int slen = sizeof (si_other);
   int dataSize = nLocalVars * sizeof (real);
   int buflen = sizeof (real) + dataSize;
@@ -89,6 +89,12 @@ main (int args, char* argv[])
 
   double stoptime;
   setup->config ("stoptime", &stoptime);
+
+  buf[0] = 4711.0;
+  buf[1] = stoptime;
+  if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
+    throw std::runtime_error ("udpin: failed to send start message");
+  
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
   for (; runtime->time () < stoptime; runtime->tick ())
     {

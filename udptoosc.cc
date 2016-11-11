@@ -52,8 +52,15 @@ main (int argc, char* argv[])
   std::for_each (std::begin (state), std::end (state),
 		 [] (real &x) { x = 0.0; });
   
+  // Wait for start message
+  if (recvfrom (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
+    throw std::runtime_error ("udptoosc: recvfrom()");
+  else if (buf[0] != 4711.0)
+    throw std::runtime_error ("udptoosc: bogus start message");
+  real stoptime = buf[1];
+
   constexpr int buflen = sizeof (buf);
-  while (true)
+  while (buf[0] < stoptime)
     {
       if (recvfrom(s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
 	  == -1)

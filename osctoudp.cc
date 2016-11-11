@@ -59,25 +59,26 @@ main (int argc, char* argv[])
   real buf[1 + VECTOR_DIM];
 
   // Wait for start message
-  if (recvfrom (s, buf, 6, 0, (struct sockaddr *) &si_other, &slen) == -1)
+  if (recvfrom (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
     throw std::runtime_error ("osctoudp: recvfrom()");
-  else if (strncmp (static_cast<char*> (static_cast<void*> (buf)),
-		    "START", 6)
-	   != 0)
+  else if (buf[0] != 4712.0)
     throw std::runtime_error ("osctoudp: bogus start message");
+  real stoptime = buf[1];
 
   std::for_each (std::begin (buf), std::end (buf),
 		 [] (real &x) { x = 0.0; });
 
-  std::thread t {osc_events, &buf[1]};
+  std::thread oscThread {osc_events, &buf[1]};
   
   RTClock clock (TIMESTEP);
   constexpr int buflen = sizeof (buf);
-  while (true)
+  real t = 0.0;
+  while (t < stoptime)
     {
-      buf[0] = clock.steppedTime ();
+      buf[0] = t;
       if (sendto (s, buf, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
 	throw std::runtime_error ("osctoudp: sendto()");
+      t += TIMESTEP;
       clock.sleepNext ();
     }
 

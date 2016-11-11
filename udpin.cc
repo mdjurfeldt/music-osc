@@ -100,7 +100,9 @@ main (int argc, char* argv[])
   if (inet_aton (SRV_IP, &si_other.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
-  if (sendto (s, "START", 6, 0, (struct sockaddr *) &si_other, slen) == -1)
+  buf[0] = 4712.0;
+  buf[1] = stoptime;
+  if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
     throw std::runtime_error ("udpin: failed to send start message");
   
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
