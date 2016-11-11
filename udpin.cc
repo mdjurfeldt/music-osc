@@ -105,6 +105,9 @@ main (int argc, char* argv[])
   if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
     throw std::runtime_error ("udpin: failed to send start message");
   
+  for (int i = 0; i <= nLocalVars; ++i)
+    buf[i] = 0.0;
+
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
 
   // Simulation loop

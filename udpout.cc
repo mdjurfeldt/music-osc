@@ -26,7 +26,7 @@
 #include <netinet/in.h>
 
 #define TIMESTEP 0.001
-#define DELAY 0.001
+#define DELAY 0.0
 #define SRV_IP "127.0.0.1"
 #define PORT 9930
 
@@ -95,6 +95,9 @@ main (int args, char* argv[])
   if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
     throw std::runtime_error ("udpout: failed to send start message");
   
+  for (int i = 0; i <= nLocalVars; ++i)
+    buf[0] = 0.0;
+
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
   for (; runtime->time () < stoptime; runtime->tick ())
     {
