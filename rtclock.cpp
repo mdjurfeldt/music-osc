@@ -22,7 +22,7 @@
 
 #include "rtclock.h"
 
-RTClock::RTClock (double interval = 0.)
+RTClock::RTClock (double interval)
 {
   interval_ = timevalFromSeconds (interval);
   reset ();

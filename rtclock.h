@@ -35,6 +35,8 @@ public:
    * If the optional interval is specified, this gives the sleeping
    * time for the method sleepNext ().
    */
+  RTClock () : RTClock (0.) { }
+  
   RTClock (double interval);
   
   /**
