@@ -1,7 +1,7 @@
 CXX ?= g++
 MPICXX ?= mpicxx
 
-CXXFLAGS ?= -g -O3
+CXXFLAGS ?= -g -O3 -DHAVE_CLOCK_NANOSLEEP
 
 .PHONY: all mpi server test
 
