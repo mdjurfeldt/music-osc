@@ -25,8 +25,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define TIMESTEP 0.01
-#define DELAY 0.01
+#define TIMESTEP 0.001
+#define DELAY 0.001
 #define SRV_IP "127.0.0.1"
 #define PORT 9930
 
@@ -70,7 +70,7 @@ main (int args, char* argv[])
   real buf[1 + nLocalVars];
 
   if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    throw std::runtime_error ("udpin: couldn't create socket");
+    throw std::runtime_error ("udpout: couldn't create socket");
 
   memset((char *) &si_other, 0, sizeof(si_other));
   si_other.sin_family = AF_INET;
@@ -93,7 +93,7 @@ main (int args, char* argv[])
   buf[0] = 4711.0;
   buf[1] = stoptime;
   if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
-    throw std::runtime_error ("udpin: failed to send start message");
+    throw std::runtime_error ("udpout: failed to send start message");
   
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
   for (; runtime->time () < stoptime; runtime->tick ())

@@ -60,7 +60,7 @@ main (int argc, char* argv[])
     {
       memcpy (outBuf, inBuf, sizeof (outBuf));
       for (int i = 0; i < VECTOR_DIM; ++i)
-	if (outBuf[i] != 0.0)
+	if (inBuf[i] != 0.0)
 	  // Press next key also
 	  outBuf[(i + 1) % VECTOR_DIM] = 1.0;
     }

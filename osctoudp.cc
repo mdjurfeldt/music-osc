@@ -33,7 +33,7 @@ osc_events (real* state)
       int id = random () % VECTOR_DIM;
       // Press
       state[id] = 1.0;
-      usleep (500);
+      usleep (500000);
       // Release
       state[id] = 0.0;
     }

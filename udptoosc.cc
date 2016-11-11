@@ -60,12 +60,13 @@ main (int argc, char* argv[])
   real stoptime = buf[1];
 
   constexpr int buflen = sizeof (buf);
+  buf[0] = 0.0;
   while (buf[0] < stoptime)
     {
       if (recvfrom(s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
 	  == -1)
 	throw std::runtime_error ("udptoosc: failed to receive packet");
-      for (int i; i < VECTOR_DIM; ++i)
+      for (int i = 0; i < VECTOR_DIM; ++i)
 	if (buf[i + 1] != state[i])
 	  {
 	    real timeStamp = buf[0];
