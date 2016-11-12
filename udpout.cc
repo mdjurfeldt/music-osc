@@ -21,6 +21,7 @@
 #include <mpi.h>
 #include <music.hh>
 #include <cstring>
+#include <stdexcept>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
