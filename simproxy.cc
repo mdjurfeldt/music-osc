@@ -19,6 +19,7 @@
  */
 
 #include <music.hh>
+#include <cstring>
 
 #define TIMESTEP 0.001
 #define VECTOR_DIM 10
