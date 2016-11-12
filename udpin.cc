@@ -21,6 +21,7 @@
 #include <mpi.h>
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <stdexcept>
 #include <sys/types.h>
