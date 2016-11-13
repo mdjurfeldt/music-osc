@@ -23,9 +23,9 @@ typedef double real;
 #endif
 
 void
-osc_events (real* state)
+osc_events (real* state, bool* stop)
 {
-  while (true)
+  while (!*stop)
     {
       // Sleep between 1 and 2 seconds
       usleep (1000000 + static_cast<int> (1e6 * drand48 ()));
@@ -68,7 +68,8 @@ main (int argc, char* argv[])
   std::for_each (std::begin (buf), std::end (buf),
 		 [] (real &x) { x = 0.0; });
 
-  std::thread oscThread {osc_events, &buf[1]};
+  bool stop = false;
+  std::thread oscThread {osc_events, &buf[1], &stop};
   
   RTClock clock (TIMESTEP);
   constexpr int buflen = sizeof (buf);
@@ -81,6 +82,9 @@ main (int argc, char* argv[])
       t += TIMESTEP;
       clock.sleepNext ();
     }
+
+  stop = true;
+  oscThread.join ();
 
   close(s);
   return 0;
