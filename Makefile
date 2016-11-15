@@ -11,7 +11,7 @@ server: udptoosc osctoudp
 
 mpi: udpin udpout
 
-test: simproxy
+test: simproxy filetobrain braintofile
 
 udpin: udpin.cc
 	$(MPICXX) $(CXXFLAGS) -o udpin udpin.cc -lmusic
@@ -30,3 +30,10 @@ rtclock.o: rtclock.h rtclock.cpp
 
 simproxy: simproxy.cc
 	$(MPICXX) $(CXXFLAGS) -o simproxy simproxy.cc -lmusic
+
+filetobrain: filetobrain.cc
+	$(MPICXX) $(CXXFLAGS) -o filetobrain filetobrain.cc -lmusic
+
+braintofile: braintofile.cc
+	$(MPICXX) $(CXXFLAGS) -o braintofile braintofile.cc -lmusic
+

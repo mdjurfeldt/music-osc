@@ -1,0 +1,12 @@
+np = 1
+stoptime = 10.0
+
+[source]
+  binary = ./filetobrain
+  args = bwv772_100Hz.txt
+
+[sink]
+  binary = ./braintofile
+  args = foo.txt
+
+source.out -> sink.in
