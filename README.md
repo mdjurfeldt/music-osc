@@ -5,25 +5,29 @@ Set correct SRV_IP in all source files. Default is localhost.
 
 To build mpi binaries:
 
-make mpi
+  make mpi
 
 To build server binaries:
 
-make server
+  make server
+
+or on OS X
+
+  make CXXFLAGS="-std=c++11 -g -O3" server
 
 To make test example:
 
-make test
+  make test
 
 Running test example:
 
 On server, launch both udptoosc and osctoudp:
 
-./usptoosc & ./osctoudp
+  ./usptoosc & ./osctoudp
 
 Launch test.music:
 
-mpirun -np 3 music test.music
+  mpirun -np 3 music test.music
 
 Output should look like:
 
