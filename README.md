@@ -23,7 +23,7 @@ Running test example:
 
 On server, launch both udptoosc and osctoudp:
 
-  ./usptoosc & ./osctoudp
+  ./udptoosc & ./osctoudp &
 
 Launch test.music:
 
@@ -51,3 +51,10 @@ To compile on Milner, do:
 
   make MPICXX=CC CXX=CC CXXFLAGS="-O3 -std=c++11 -DHAVE_CLOCK_NANOSLEEP"
 
+How to install liblo to $HOME/local, which is where the Makefile expects it
+
+  download liblo-0.28.tar from http://liblo.sourceforge.net
+  tar xf liblo-0.28.tar
+  cd  liblo-0.28
+  ./configure --prefix=$HOME/local
+  make install

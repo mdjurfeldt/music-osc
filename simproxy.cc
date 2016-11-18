@@ -22,7 +22,7 @@
 #include <cstring>
 
 #define TIMESTEP 0.001
-#define VECTOR_DIM 10
+#define VECTOR_DIM 80
 
 #if 1
 typedef float real;

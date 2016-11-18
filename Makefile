@@ -3,13 +3,15 @@ MPICXX ?= mpicxx
 
 CXXFLAGS ?= -g -O3 -DHAVE_CLOCK_NANOSLEEP
 
+LOFLAGS = -I$$HOME/local/include -L$$HOME/local/lib
+
 .PHONY: all mpi server test
 
 all: mpi server test
 
 server: udptoosc osctoudp
 
-mpi: udpin udpout
+mpi: udpin udpout oscin oscout
 
 test: simproxy filetobrain braintofile
 
@@ -37,3 +39,8 @@ filetobrain: filetobrain.cc
 braintofile: braintofile.cc
 	$(MPICXX) $(CXXFLAGS) -o braintofile braintofile.cc -lmusic
 
+oscout: oscout.cc
+	$(MPICXX) $(CXXFLAGS) -o oscout $(LOFLAGS) oscout.cc -lmusic -llo
+
+oscin: oscin.cc
+	$(MPICXX) $(CXXFLAGS) -o oscin $(LOFLAGS) oscin.cc -lmusic -llo
