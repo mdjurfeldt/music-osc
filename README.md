@@ -42,3 +42,12 @@ udptoosc: 3.005 KEY 7 RELEASED
 .
 .
 .
+
+
+To compile on Milner, do:
+
+  module swap PrgEnv-cray PrgEnv-gnu
+  module add music
+
+  make MPICXX=CC CXX=CC CXXFLAGS="-O3 -std=c++11 -DHAVE_CLOCK_NANOSLEEP"
+
