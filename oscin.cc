@@ -62,31 +62,35 @@ typedef struct {
   real timeStamp;
   int msgCount;
   int blobsize;
-  char *blobdata;
+  int datasize;
+  real *data;
 } keystate_t;
 
 int keystate_handler(const char *path, const char *types, lo_arg ** argv,
 		     int argc, void *data, void *user_data)
 {
   keystate_t *keystate = (keystate_t*)user_data;
-	
+  
   keystate->timetag = lo_message_get_timestamp((lo_message)data);
   keystate->msgCount = argv[0]->i;
   keystate->timeStamp = argv[1]->d;
   keystate->blobsize = lo_blob_datasize((lo_blob)argv[2]);
-  keystate->blobdata = (char *)lo_blob_dataptr((lo_blob)argv[2]);
-    
-  //     fprintf(stderr, "keystate_handler: timetag = %u %u\n", keystate->timetag.sec, keystate->timetag.frac);
-  //     fprintf(stderr, "keystate_handler: msgCount = %d\n", keystate->msgCount);
-  //     fprintf(stderr, "keystate_handler: timeStamp = %f\n", keystate->timeStamp);
-  //     fprintf(stderr, "keystate_handler: blobsize = %d\n", keystate->blobsize);
-    
+  
+  char *blobdata =  (char *)lo_blob_dataptr((lo_blob)argv[2]);
+  real *dest = keystate->data;
+  
+  if (keystate->datasize != keystate->blobsize)
+    std::runtime_error ("udpin: data size missmatch");
+  
+  for (int i = 0; i <  keystate->blobsize; i++)
+    dest[i] = blobdata[i];
+  
   return 1;
 }
 
 
 int main (int argc, char* argv[]) {
-
+  
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
   int width = atoi (argv[1]); // command line arg gives width
@@ -114,28 +118,18 @@ int main (int argc, char* argv[]) {
 
   lo_server server = lo_server_new(SIMPORT, error);
   keystate_t keystate;
+  keystate.data = data;
+  keystate.datasize = width;
   lo_server_add_method(server, "/keystate", "idb", keystate_handler, &keystate);    
 
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
 
   // Simulation loop
   for (; runtime->time () < stoptime; runtime->tick ()) {
-
     do {
       if (lo_server_recv(server) == -1)
 	std::runtime_error ("udpin: lo_server_recv()");
-    } while (keystate.timeStamp + DELAY < runtime->time ());
-    
-    if (width != keystate.blobsize)
-      std::runtime_error ("udpin: data size missmatch");
-
-    printf("oscin:  ");
-    for (int i = 0; i < width; i++) {
-      data[i] = keystate.blobdata[i];
-      printf("%d ", keystate.blobdata[i]);
-    }
-    printf("\n");
-
+    } while (keystate.timeStamp + DELAY < runtime->time ());    
   }
   
   runtime->finalize ();

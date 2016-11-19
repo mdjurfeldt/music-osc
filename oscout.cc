@@ -81,12 +81,9 @@ int main (int args, char* argv[])
     lo_message message = lo_message_new();
     lo_bundle bundle = lo_bundle_new(timetag);
     
-    printf("oscout: ");
     for (int i = 0; i < width; i++) {
       blobdata[i] = buf[i];
-      printf("%d ", blobdata[i]);
     }
-    printf("\n\n");
     
     lo_message_add_int32(message, msgCount++);
     lo_message_add_double(message, runtime->time());
