@@ -3,7 +3,8 @@ stoptime = 10.0
 
 [sim]
   binary = ./simproxy
-
+  args = 10
+  
 [udpin]
   binary = ./udpin
   args = 10

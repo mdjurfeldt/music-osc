@@ -22,7 +22,7 @@
 #include <cstring>
 
 #define TIMESTEP 0.001
-#define VECTOR_DIM 80
+#define VECTOR_DIM 10
 
 #if 1
 typedef float real;
@@ -37,19 +37,21 @@ main (int argc, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
 
+  int width = atoi (argv[1]); // command line arg gives width
+
   MUSIC::ContInputPort * in = setup->publishContInput ("in");
   MUSIC::ContOutputPort * out = setup->publishContOutput ("out");
 
-  real inBuf[VECTOR_DIM];
+  real inBuf[width];
   MUSIC::ArrayData inMap (inBuf,
 			  MPI_MYREAL,
 			  0,
-			  VECTOR_DIM);
+			  width);
   in->map (&inMap, 0.0, 1, false);
 
-  real outBuf[VECTOR_DIM];
+  real outBuf[width];
 
-  for (int i = 0; i < VECTOR_DIM; ++i)
+  for (int i = 0; i < width; ++i)
     {
       inBuf[i] = 0.0;
       outBuf[i] = 0.0;
@@ -58,7 +60,7 @@ main (int argc, char* argv[])
   MUSIC::ArrayData outMap (outBuf,
 			   MPI_MYREAL,
 			   0,
-			   VECTOR_DIM);
+			   width);
   out->map (&outMap, 1);
   
   double stoptime;
@@ -67,10 +69,10 @@ main (int argc, char* argv[])
   for (; runtime->time () < stoptime; runtime->tick ())
     {
       memcpy (outBuf, inBuf, sizeof (outBuf));
-      for (int i = 0; i < VECTOR_DIM; ++i)
+      for (int i = 0; i < width; ++i)
 	if (inBuf[i] != 0.0)
 	  // Press next key also
-	  outBuf[(i + 1) % VECTOR_DIM] = 1.0;
+	  outBuf[(i + 1) % width] = 1.0;
     }
 
   runtime->finalize ();
