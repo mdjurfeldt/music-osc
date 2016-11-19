@@ -44,6 +44,9 @@ typedef double real;
 int main (int args, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (args, argv);
+
+  char *port = argv[1];
+
   MUSIC::ContInputPort* keydata = setup->publishContInput ("in");
   MPI::Intracomm comm = setup->communicator ();
   int nProcesses = comm.Get_size ();
@@ -59,7 +62,7 @@ int main (int args, char* argv[])
   else
     comm.Abort (1);
 
-  lo_address address = lo_address_new(NULL, SCPORT);
+  lo_address address = lo_address_new(NULL, port);
   lo_blob blob = lo_blob_new(width, NULL);
   char *blobdata = (char*)lo_blob_dataptr(blob);
   lo_timetag timetag = {0, 0}; // so far unused
@@ -83,7 +86,7 @@ int main (int args, char* argv[])
       blobdata[i] = buf[i];
       printf("%d ", blobdata[i]);
     }
-    printf("\n");
+    printf("\n\n");
     
     lo_message_add_int32(message, msgCount++);
     lo_message_add_double(message, runtime->time());

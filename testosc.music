@@ -3,13 +3,15 @@ stoptime = 10.0
 
 [sim]
   binary = ./simproxy
-
+  args = 80
+  
 [oscin]
   binary = ./oscin
   args = 80
 
 [oscout]
   binary = ./oscout
-
+  args = 57120
+  
 oscin.out -> sim.in [80]
 sim.out -> oscout.in [80]
