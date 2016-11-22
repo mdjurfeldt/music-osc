@@ -41,8 +41,6 @@
 
 #define DELAY TIMESTEP
 
-#define SIMPORT "9930" // port we listen for OSC messages
-
 #if 1
 typedef float real;
 #define MPI_MYREAL MPI::FLOAT
@@ -93,7 +91,8 @@ int main (int argc, char* argv[]) {
   
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
-  int width = atoi (argv[1]); // command line arg gives width
+  int width = atoi (argv[1]); // command line args give width
+  char *port = argv[2];       // and port
 
   MUSIC::ContOutputPort* keydata = setup->publishContOutput ("out");
 
@@ -116,7 +115,7 @@ int main (int argc, char* argv[]) {
   double stoptime;
   setup->config ("stoptime", &stoptime);
 
-  lo_server server = lo_server_new(SIMPORT, error);
+  lo_server server = lo_server_new(port, error);
   keystate_t keystate;
   keystate.data = data;
   keystate.datasize = width;
