@@ -56,5 +56,16 @@ How to install liblo to $HOME/local, which is where the Makefile expects it
   download liblo-0.28.tar from http://liblo.sourceforge.net
   tar xf liblo-0.28.tar
   cd  liblo-0.28
-  ./configure --prefix=$HOME/local
+  ./configure --prefix=$HOME/local --enable-static=yes
   make install
+
+
+How to run on osc test milner
+
+  on wand: sudo redirect add <IP> 9930 57120
+  music -e testosc.music
+  chmod +x sim.sh oscin.sh oscout.sh
+  cp sim.sh oscin.sh oscout.sh oscin oscout simproxy /cfs/milner/scratch/...
+  salloc -N 3
+  aprun -n 1 ./sim.sh : -n 1 ./oscin.sh : -n 1 ./oscout.sh
+  exit
