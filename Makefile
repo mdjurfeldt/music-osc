@@ -4,6 +4,7 @@ MPICXX ?= mpicxx
 CXXFLAGS ?= -g -O3 -DHAVE_CLOCK_NANOSLEEP
 
 LOFLAGS = -I$$HOME/local/include -L$$HOME/local/lib
+PBCPNNBASE=../pbcpnn
 
 .PHONY: all mpi server test
 
@@ -44,3 +45,6 @@ oscout: oscout.cc
 
 oscin: oscin.cc
 	$(MPICXX) $(CXXFLAGS) -o oscin $(LOFLAGS) oscin.cc -lmusic -llo
+
+minimalbrain: minimalbrain.cpp
+	$(MPICXX) $(CXXFLAGS) -fopenmp -I ${PBCPNNBASE} -I ${PBCPNNBASE}/build-music -o minimalbrain $(LOFLAGS) minimalbrain.cpp -L ${PBCPNNBASE}/build-music/base -lpbcpnn -lmusic

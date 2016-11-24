@@ -1,0 +1,19 @@
+stoptime = 10.0
+timestep = 0.010
+
+[source]
+  np = 1
+  binary = ./filetobrain
+  args = bwv772_100Hz.txt
+
+[sink]
+  np = 1
+  binary = ./braintofile
+  args = foo.txt
+
+[brain]
+  np = 2
+  binary = ./minimalbrain
+
+source.out -> brain.sensorpool
+brain.motorpool -> sink.in
