@@ -45,7 +45,8 @@ int main (int args, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (args, argv);
 
-  char *port = argv[1];
+  char *host = argv[1]; // usually wand.pdc.kth.se
+  char *port = argv[2]; // usually SuperCollider OSC input port 57120
 
   MUSIC::ContInputPort* keydata = setup->publishContInput ("in");
   MPI::Intracomm comm = setup->communicator ();
@@ -62,7 +63,7 @@ int main (int args, char* argv[])
   else
     comm.Abort (1);
 
-  lo_address address = lo_address_new(NULL, port);
+  lo_address address = lo_address_new(host, port);
   lo_blob blob = lo_blob_new(width, NULL);
   char *blobdata = (char*)lo_blob_dataptr(blob);
   lo_timetag timetag = {0, 0}; // so far unused

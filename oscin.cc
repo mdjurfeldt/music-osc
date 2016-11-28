@@ -91,8 +91,11 @@ int main (int argc, char* argv[]) {
   
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
-  int width = atoi (argv[1]); // command line args give width
-  char *port = argv[2];       // and port
+  int width = atoi (argv[1]); // keystate vector width
+  char *host = argv[2];       // usually wand.pdc.kth.se
+  char *servport = argv[3];   // server listens on this port (usually 9931
+  char *scport = argv[4];     // port to which start message is sent
+  // usually SuperCollider OSC input port 57120
 
   MUSIC::ContOutputPort* keydata = setup->publishContOutput ("out");
 
@@ -100,7 +103,7 @@ int main (int argc, char* argv[]) {
   int nProcesses = comm.Get_size (); // how many processes are there?
   if (nProcesses > 1)
     {
-      std::cout << "udpin: needs to run in a single MPI process\n";
+      std::cout << "oscin: needs to run in a single MPI process\n";
       exit (1);
     }
 
@@ -115,19 +118,28 @@ int main (int argc, char* argv[]) {
   double stoptime;
   setup->config ("stoptime", &stoptime);
 
-  lo_server server = lo_server_new(port, error);
+  lo_server server = lo_server_new(servport, error);
   keystate_t keystate;
   keystate.data = data;
   keystate.datasize = width;
   lo_server_add_method(server, "/keystate", "idb", keystate_handler, &keystate);    
-
+  
+  lo_address address = lo_address_new(NULL, scport); // is NULL here ok or do we need to get the IP here?
+  if (lo_send_from(address, server, LO_TT_IMMEDIATE, "/start", "ddd", 4711.0, TIMESTEP, stoptime) == -1) {
+    printf("oscin: OSC error %d: %s\n",
+	   lo_address_errno(address), lo_address_errstr(address));
+    exit (1);
+  } else {
+    printf("oscin: start message sent\n");
+  }
+  
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
-
+  
   // Simulation loop
   for (; runtime->time () < stoptime; runtime->tick ()) {
     do {
       if (lo_server_recv(server) == -1)
-	std::runtime_error ("udpin: lo_server_recv()");
+	std::runtime_error ("oscin: lo_server_recv()");
     } while (keystate.timeStamp + DELAY < runtime->time ());    
   }
   

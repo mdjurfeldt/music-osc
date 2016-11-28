@@ -7,11 +7,11 @@ stoptime = 1000.0
   
 [oscin]
   binary = ./oscin
-  args = 88 9930
+  args = 88 localhost 9931 57120
 
 [oscout]
   binary = ./oscout
-  args = 57120
+  args = localhost 57120
   
 oscin.out -> sim.in [88]
 sim.out -> oscout.in [88]
