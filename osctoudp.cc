@@ -16,7 +16,7 @@
 #define VECTOR_DIM 10
 #define PORT 9931
 
-#if 1
+#if 0
 typedef float real;
 #else
 typedef double real;
