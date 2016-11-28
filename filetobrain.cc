@@ -26,9 +26,9 @@
 #define TIMESTEP 0.010
 #define KEYBOARD_SIZE 88
 
-// Use floats for communication
-typedef float real;
-#define MPI_MYREAL MPI::FLOAT
+// Use double for communication
+typedef double real;
+#define MPI_MYREAL MPI::DOUBLE
 
 MPI::Intracomm comm;
 real keyboard[KEYBOARD_SIZE];
