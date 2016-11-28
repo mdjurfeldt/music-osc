@@ -41,7 +41,7 @@
 
 #define DELAY TIMESTEP
 
-#if 1
+#if 0
 typedef float real;
 #define MPI_MYREAL MPI::FLOAT
 #else

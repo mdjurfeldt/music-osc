@@ -33,7 +33,7 @@
 
 #define SCPORT "57121"
 
-#if 1
+#if 0
 typedef float real;
 #define MPI_MYREAL MPI::FLOAT
 #else

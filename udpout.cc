@@ -32,7 +32,7 @@
 #define SRV_IP "127.0.0.1"
 #define PORT 9930
 
-#if 1
+#if 0
 typedef float real;
 #define MPI_MYREAL MPI::FLOAT
 #else

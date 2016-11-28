@@ -24,7 +24,7 @@
 #define TIMESTEP 0.001
 #define VECTOR_DIM 10
 
-#if 1
+#if 0
 typedef float real;
 #define MPI_MYREAL MPI::FLOAT
 #else
