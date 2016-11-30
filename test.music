@@ -1,16 +1,16 @@
 np = 1
-stoptime = 10.0
+stoptime = 100.0
 
 [sim]
   binary = ./simproxy
-  args = 10
+  args = 88
   
-[udpin]
-  binary = ./udpin
-  args = 10
+[source]
+  binary = ./filetobrain
+  args = bwv772_100Hz.txt
 
 [udpout]
   binary = ./udpout
 
-udpin.out -> sim.in [10]
-sim.out -> udpout.in [10]
+source.out -> sim.in [88]
+sim.out -> udpout.in [88]

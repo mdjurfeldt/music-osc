@@ -48,3 +48,6 @@ oscin: oscin.cc
 
 minimalbrain: minimalbrain.cpp
 	$(MPICXX) $(CXXFLAGS) -fopenmp -I ${PBCPNNBASE} -I ${PBCPNNBASE}/build-music -o minimalbrain $(LOFLAGS) minimalbrain.cpp -L ${PBCPNNBASE}/build-music/base -lpbcpnn -lmusic
+
+udptomidi: udptomidi.cpp
+	${CXX} -g -o udptomidi -l rtmidi udptomidi.cpp

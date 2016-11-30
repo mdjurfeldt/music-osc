@@ -21,8 +21,8 @@
 #include <music.hh>
 #include <cstring>
 
-#define TIMESTEP 0.001
-#define VECTOR_DIM 10
+#define TIMESTEP 0.010
+#define VECTOR_DIM 88
 
 #if 0
 typedef float real;
@@ -72,7 +72,8 @@ main (int argc, char* argv[])
       for (int i = 0; i < width; ++i)
 	if (inBuf[i] != 0.0)
 	  // Press next key also
-	  outBuf[(i + 1) % width] = 1.0;
+	  outBuf[(i + 12) % width] = 1.0;
+      std::cerr << "!";
     }
 
   runtime->finalize ();

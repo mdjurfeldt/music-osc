@@ -19,6 +19,7 @@
  */
 
 #include <cstdlib>
+#include <unistd.h>
 #include <iostream>
 #include <fstream>
 #include <music.hh>
@@ -74,10 +75,13 @@ main (int argc, char* argv[])
 
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
 
+  std::cout << "Starting to feed file" << std::endl;
   for (; runtime->time () < stoptime; runtime->tick ()) {
     for (int i=0; i<KEYBOARD_SIZE; i++) {
       keyfile >> keyboard[i];
     }
+    usleep(10000);
+    std::cerr << "<";
   }
 
   runtime->finalize ();
