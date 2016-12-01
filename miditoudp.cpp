@@ -23,9 +23,33 @@ typedef float real;
 typedef double real;
 #endif
 
-// Variables for the MIDI connection
+// Handle for the MIDI connection
 RtMidiIn *midiin;
-std::vector<unsigned char> message;
+
+// Buffer for the UDP packages
+real buffer[1 + VECTOR_DIM];
+
+
+// MIDI event callback function
+//
+void midiEvent (double timestamp, std::vector<unsigned char>* message, void* voidstate) {
+  real *keyboard = (real*)voidstate;
+
+  if (message->size() > 2) {
+    if ((*message)[0] == 144 && (*message)[2] != 0) {
+      // Key press
+      int id = (*message)[1] - 21;
+      if (id >= 0 && id < VECTOR_DIM)
+	keyboard[id] = 1.0;
+    } else
+      if (((*message)[0] == 144 && (*message)[2] == 0) || ((*message)[0] == 128)) {
+	// Key release
+	int id = (*message)[1] - 21;
+	if (id >= 0 && id < VECTOR_DIM)
+	  keyboard[id] = 0.0;
+      }
+  }
+}
 
 
 void init_midi(void) {
@@ -51,36 +75,8 @@ void init_midi(void) {
     std::cout << "miditoudp: No Keystation port found, using default MIDI input" << std::endl;
   midiin->openPort( selectedPort, "Milner Input" );
 
-  // Don't ignore sysex, timing, or active sensing messages.
-  midiin->ignoreTypes( false, false, false );
-}
-
-
-void
-osc_events (real* state, bool* stop)
-{
-  double timeStamp;
-  int nBytes;
-
-  while (!*stop) {
-    timeStamp = midiin->getMessage( &message );
-    nBytes = message.size();
-
-    if (nBytes > 2) {
-      if (message[0] == 144 && message[2] != 0) {
-	// Key press
-	int id = message[1] - 21;
-	if (id >= 0 && id < VECTOR_DIM)
-	  state[id] = 1.0;
-      } else
-	if ((message[0] == 144 && message[2] == 0) || (message[0] == 128)) {
-	  // Key release
-	  int id = message[1] - 21;
-	  if (id >= 0 && id < VECTOR_DIM)
-	    state[id] = 0.0;
-	}
-    }
-  }
+  // Install our MIDI event callback function
+  midiin->setCallback( midiEvent, &buffer[1] );
 }
 
 
@@ -103,36 +99,29 @@ main (int argc, char* argv[])
   if (bind (s, (struct sockaddr *) &si_me, sizeof (si_me)) == -1)
     throw std::runtime_error ("miditoudp: could bind socket to port");
 
-  real buf[1 + VECTOR_DIM];
-
   // Wait for start message
-  if (recvfrom (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
+  if (recvfrom (s, buffer, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
     throw std::runtime_error ("miditoudp: recvfrom()");
-  else if (buf[0] != 4712.0)
+  else if (buffer[0] != 4712.0)
     throw std::runtime_error ("miditoudp: bogus start message");
-  real stoptime = buf[1];
+  real stoptime = buffer[1];
 
-  std::for_each (std::begin (buf), std::end (buf),
+  std::for_each (std::begin (buffer), std::end (buffer),
 		 [] (real &x) { x = 0.0; });
 
-  bool stop = false;
-  std::thread oscThread {osc_events, &buf[1], &stop};
-  
-  RTClock clock (TIMESTEP);
-  constexpr int buflen = sizeof (buf);
-  real t = 0.0;
-  while (t < stoptime)
-    {
-      buf[0] = t;
-      if (sendto (s, buf, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
-	throw std::runtime_error ("miditoudp: sendto()");
-      t += TIMESTEP;
-      std::cerr << "-";
-      clock.sleepNext ();
-    }
 
-  stop = true;
-  oscThread.join ();
+  RTClock clock (TIMESTEP);
+  constexpr int buflen = sizeof (buffer);
+  real t = 0.0;
+
+  while (t < stoptime) {
+    buffer[0] = t;
+    if (sendto (s, buffer, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
+      throw std::runtime_error ("miditoudp: sendto()");
+    t += TIMESTEP;
+    // std::cerr << "-";
+    clock.sleepNext ();
+  }
 
   close(s);
   return 0;
