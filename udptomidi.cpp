@@ -51,14 +51,18 @@ void init_midi(void) {
     throw std::runtime_error( "No MIDI ports available!");
   }
 
-  // Open first available port.
-  midiout->openPort( 0 );
+  // Search for a synth
+  int selectedPort = 0;
+  for (int i=0; i<nPorts; i++) {
+    std::string s = midiout->getPortName(i);
+    if (s.find("Synth") != std::string::npos) {
+      selectedPort = i;
+      std::cout << "udptomidi: connecting to " << s << std::endl;
+      break;
+    }
+  }
+  midiout->openPort( selectedPort );
 
-  // Wait for the user to confirm
-  std::cout << "Press return to start";
-  while (std::cin.get() != '\n')
-    ;
-  
   // Send out a series of MIDI messages.
   // Program change: 192, 5
   message.push_back( 192 );
@@ -116,9 +120,9 @@ main (int argc, char* argv[])
 	  {
 	    real timeStamp = buf[0];
 	    if (buf[i + 1] != 0.0)
-	      osc_key_pressed (timeStamp, i+1);
+	      osc_key_pressed (timeStamp, i);
 	    else
-	      osc_key_released (timeStamp, i+1);
+	      osc_key_released (timeStamp, i);
 	    state[i] = buf[i + 1];
 	  }
     }

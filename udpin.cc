@@ -33,7 +33,7 @@
 // This is the expected time difference between incoming UDP packets
 // as well as the MUSIC inter-tick-interval
 
-#define TIMESTEP 0.001
+#define TIMESTEP 0.010
 
 // This is the modeled time delay. We maintain
 // t == UDP timestamp + DELAY.

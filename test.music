@@ -6,8 +6,8 @@ stoptime = 100.0
   args = 88
   
 [source]
-  binary = ./filetobrain
-  args = bwv772_100Hz.txt
+  binary = ./udpin
+  args = 88
 
 [udpout]
   binary = ./udpout

@@ -50,4 +50,7 @@ minimalbrain: minimalbrain.cpp
 	$(MPICXX) $(CXXFLAGS) -fopenmp -I ${PBCPNNBASE} -I ${PBCPNNBASE}/build-music -o minimalbrain $(LOFLAGS) minimalbrain.cpp -L ${PBCPNNBASE}/build-music/base -lpbcpnn -lmusic
 
 udptomidi: udptomidi.cpp
-	${CXX} -g -o udptomidi -l rtmidi udptomidi.cpp
+	${CXX} -g -o udptomidi udptomidi.cpp -l rtmidi
+
+miditoudp: miditoudp.cpp
+	${CXX} -g -o miditoudp  rtclock.o miditoudp.cpp -l rtmidi -l pthread

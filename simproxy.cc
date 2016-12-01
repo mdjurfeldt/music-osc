@@ -71,8 +71,8 @@ main (int argc, char* argv[])
       memcpy (outBuf, inBuf, sizeof (outBuf));
       for (int i = 0; i < width; ++i)
 	if (inBuf[i] != 0.0)
-	  // Press next key also
-	  outBuf[(i + 12) % width] = 1.0;
+	  // Press another key too
+	  outBuf[(i + 4) % width] = 1.0;
       std::cerr << "!";
     }
 
