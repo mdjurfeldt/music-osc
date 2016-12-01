@@ -43,7 +43,7 @@ osc_key_released (real timeStamp, int id)
 
 
 void init_midi(void) {
-  midiout = new RtMidiOut();
+  midiout = new RtMidiOut(RtMidi::UNSPECIFIED, "Milner Output");
 
   // Check available ports.
   unsigned int nPorts = midiout->getPortCount();
@@ -57,11 +57,13 @@ void init_midi(void) {
     std::string s = midiout->getPortName(i);
     if (s.find("Synth") != std::string::npos) {
       selectedPort = i;
-      std::cout << "udptomidi: connecting to " << s << std::endl;
+      std::cout << "udptomidi: Connecting to " << s << std::endl;
       break;
     }
   }
-  midiout->openPort( selectedPort );
+  if (selectedPort == 0)
+    std::cout << "udptomidi: No Synth port found, using default MIDI output" << std::endl;
+  midiout->openPort( selectedPort, "Milner Output" );
 
   // Send out a series of MIDI messages.
   // Program change: 192, 5

@@ -29,7 +29,7 @@ std::vector<unsigned char> message;
 
 
 void init_midi(void) {
-  midiin = new RtMidiIn();
+  midiin = new RtMidiIn(RtMidi::UNSPECIFIED, "Milner Input");
 
   // Check available ports.
   unsigned int nPorts = midiin->getPortCount();
@@ -47,7 +47,9 @@ void init_midi(void) {
       break;
     }
   }
-  midiin->openPort( selectedPort );
+  if (selectedPort == 0)
+    std::cout << "miditoudp: No Keystation port found, using default MIDI input" << std::endl;
+  midiin->openPort( selectedPort, "Milner Input" );
 
   // Don't ignore sysex, timing, or active sensing messages.
   midiin->ignoreTypes( false, false, false );
