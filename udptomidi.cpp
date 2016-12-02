@@ -97,8 +97,8 @@ main (int argc, char* argv[])
 
   real buf[1 + VECTOR_DIM];
   real state[VECTOR_DIM];
-  std::for_each (std::begin (state), std::end (state),
-		 [] (real &x) { x = 0.0; });
+
+  std::fill (std::begin(state), std::end(state), 0.0);
   
   init_midi();
 
@@ -116,7 +116,7 @@ main (int argc, char* argv[])
       if (recvfrom(s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
 	  == -1)
 	throw std::runtime_error ("udptoosc: failed to receive packet");
-      std::cerr << ".";
+      // std::cerr << ".";
       for (int i = 0; i < VECTOR_DIM; ++i)
 	if (buf[i + 1] != state[i])
 	  {

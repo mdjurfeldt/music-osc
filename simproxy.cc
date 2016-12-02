@@ -21,7 +21,7 @@
 #include <music.hh>
 #include <cstring>
 
-#define TIMESTEP 0.010
+#define TIMESTEP 0.001
 #define VECTOR_DIM 88
 
 #if 0
@@ -73,7 +73,7 @@ main (int argc, char* argv[])
 	if (inBuf[i] != 0.0)
 	  // Press another key too
 	  outBuf[(i + 4) % width] = 1.0;
-      std::cerr << "!";
+      // std::cerr << "!";
     }
 
   runtime->finalize ();

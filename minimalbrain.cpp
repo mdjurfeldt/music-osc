@@ -34,27 +34,22 @@ int main(int argc, char** argv) {
   Globals::init(argc,argv);
   Globals::setdt(0.001);
 
-  int idur = 10;
-    
   SensorPop* sensorpop = new SensorPop("sensorpool", 0.010, 1, 1, 88, 0.010, 0.0); 
   MotorPop* motorpop = new MotorPop("motorpool", 0.010, 1, 1, 88, 0.010, 0.0); 
     
-  std::cerr << "After pop" << std::endl;
-
   Globals::start();
-
-  std::cerr << "After start()" << std::endl;
 
   MPI_Barrier(Globals::_comm_world);
 
   if (ISROOT)
     std::cerr << "music sim time = " << Globals::_musicstoptime << std::endl;
 
-  for (int simt=0; Globals::_musicruntime->time() < Globals::_musicstoptime; simt++) {
-    for (int step=0; step<idur; step++) Globals::updstateall();
-  }
+  // Main simulation loop
+  while (Globals::_musicruntime->time() < Globals::_musicstoptime)
+    Globals::updstateall();
 
-  if (Globals::isroot()) printf(" Done!\n");
+  if (ISROOT)
+    std::cerr << "Done!" << std::endl;
 
   Globals::stop();
     

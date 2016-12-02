@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define TIMESTEP 0.010
+#define TIMESTEP 0.001
 #define DELAY 0.0
 #define SRV_IP "127.0.0.1"
 #define PORT 9930
@@ -106,7 +106,7 @@ main (int args, char* argv[])
       buf[0] = runtime->time ();
       if (sendto (s, buf, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
 	throw std::runtime_error ("udpout: sendto()");
-      std::cerr << ">";
+      // std::cerr << ">";
     }
   runtime->finalize ();
   

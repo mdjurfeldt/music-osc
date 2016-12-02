@@ -13,7 +13,7 @@
 
 #include "rtclock.h"
 
-#define TIMESTEP 0.010
+#define TIMESTEP 0.001
 #define VECTOR_DIM 88
 #define PORT 9931
 
