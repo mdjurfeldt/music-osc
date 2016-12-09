@@ -30,34 +30,21 @@
 #include <netinet/in.h>
 #include <music.hh>
 
-// This is the expected time difference between incoming UDP packets
-// as well as the MUSIC inter-tick-interval
-
-#define TIMESTEP 0.001
+#include "OurUDPProtocol.hh"
 
 // This is the modeled time delay. We maintain
 // t == UDP timestamp + DELAY.
 
-#define DELAY TIMESTEP
+#define DELAY OurUDPProtocol::TIMESTEP
 
-#define SRV_IP "127.0.0.1"
-#define PORT 9931
-
-#if 0
-typedef float real;
-#define MPI_MYREAL MPI::FLOAT
-#else
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
-#endif
+struct OurUDPProtocol::toMusicPackage buffer;
+struct OurUDPProtocol::startPackage startBuffer;
 
 int
 main (int argc, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
-  int width = atoi (argv[1]); // command line arg gives width
-
   MUSIC::ContOutputPort* wavedata =
     setup->publishContOutput ("out");
 
@@ -69,16 +56,11 @@ main (int argc, char* argv[])
       exit (1);
     }
 
-  int nLocalVars = width;
-  real* data = new real[nLocalVars];
-  for (int i = 0; i < nLocalVars; ++i)
-    data[i] = 0.0;
-    
   // Declare what data we have to export
-  MUSIC::ArrayData dmap (data,
-			 MPI_MYREAL,
+  MUSIC::ArrayData dmap (&buffer.keysPressed,
+			 MPI_DOUBLE,
 			 0,
-			 nLocalVars);
+			 OurUDPProtocol::KEYBOARDSIZE);
   wavedata->map (&dmap, 1); // buffer only one tick
   
   double stoptime;
@@ -88,43 +70,38 @@ main (int argc, char* argv[])
   struct sockaddr_in si_other;
   int s, i;
   unsigned int slen=sizeof(si_other);
-  int dataSize = nLocalVars * sizeof (real);
-  int buflen = sizeof (real) + dataSize;
-  real buf[1 + nLocalVars];
-
+  
   if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpin: couldn't create socket");
 
   memset((char *) &si_other, 0, sizeof(si_other));
   si_other.sin_family = AF_INET;
-  si_other.sin_port = htons (PORT);
-  if (inet_aton (SRV_IP, &si_other.sin_addr) == 0)
+  si_other.sin_port = htons (OurUDPProtocol::TOMUSICPORT);
+  if (inet_aton (OurUDPProtocol::MIDISERVER_IP, &si_other.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
-  buf[0] = 4712.0;
-  buf[1] = stoptime;
-  if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
+  startBuffer.magicNumber = OurUDPProtocol::MAGIC;
+  startBuffer.stopTime = stoptime;
+  if (sendto (s, &startBuffer, sizeof(startBuffer), 0, (struct sockaddr *) &si_other, slen) == -1)
     throw std::runtime_error ("udpin: failed to send start message");
-  
-  for (int i = 0; i <= nLocalVars; ++i)
-    buf[i] = 0.0;
 
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
+  // Not really necessary since static memory is zero from start
+  for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
+    buffer.keysPressed[i] = 0.0;
+
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   // Simulation loop
-  for (; runtime->time () < stoptime; runtime->tick ())
-    {
-      real timeStamp;
-      do
-	{
-	  if (recvfrom (s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
-	      == -1)
-	    std::runtime_error ("udpin: recvfrom()");
-	  timeStamp = buf[0];
-	}
-      while (timeStamp + DELAY < runtime->time ());
-      memcpy (data, &buf[1], dataSize);
-    }
+  for (; runtime->time () < stoptime; runtime->tick ()) {
+    double timeStamp;
+
+    do {
+      if (recvfrom (s, &buffer, sizeof(buffer), 0, (struct sockaddr *) &si_other, &slen)
+	  == -1)
+	std::runtime_error ("udpin: recvfrom()");
+      timeStamp = buffer.timestamp;
+    } while (timeStamp + DELAY < runtime->time ());
+  }
 
   close (s);
 

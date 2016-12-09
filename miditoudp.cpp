@@ -12,40 +12,32 @@
 #include <rtmidi/RtMidi.h>
 
 #include "rtclock.h"
+#include "OurUDPProtocol.hh"
 
-#define TIMESTEP 0.001
-#define VECTOR_DIM 88
-#define PORT 9931
-
-#if 0
-typedef float real;
-#else
-typedef double real;
-#endif
 
 // Handle for the MIDI connection
 RtMidiIn *midiin;
 
 // Buffer for the UDP packages
-real buffer[1 + VECTOR_DIM];
+struct OurUDPProtocol::toMusicPackage buffer;
 
 
 // MIDI event callback function
 //
 void midiEvent (double timestamp, std::vector<unsigned char>* message, void* voidstate) {
-  real *keyboard = (real*)voidstate;
+  double *keyboard = (double*)voidstate;
 
   if (message->size() > 2) {
     if ((*message)[0] == 144 && (*message)[2] != 0) {
       // Key press
       int id = (*message)[1] - 21;
-      if (id >= 0 && id < VECTOR_DIM)
+      if (id >= 0 && id < OurUDPProtocol::KEYBOARDSIZE)
 	keyboard[id] = 1.0;
     } else
       if (((*message)[0] == 144 && (*message)[2] == 0) || ((*message)[0] == 128)) {
 	// Key release
 	int id = (*message)[1] - 21;
-	if (id >= 0 && id < VECTOR_DIM)
+	if (id >= 0 && id < OurUDPProtocol::KEYBOARDSIZE)
 	  keyboard[id] = 0.0;
       }
   }
@@ -76,7 +68,7 @@ void init_midi(void) {
   midiin->openPort( selectedPort, "Milner Input" );
 
   // Install our MIDI event callback function
-  midiin->setCallback( midiEvent, &buffer[1] );
+  midiin->setCallback( midiEvent, &buffer.keysPressed );
 }
 
 
@@ -94,31 +86,32 @@ main (int argc, char* argv[])
 
   memset ((char *) &si_me, 0, sizeof (si_me));
   si_me.sin_family = AF_INET;
-  si_me.sin_port = htons(PORT);
+  si_me.sin_port = htons(OurUDPProtocol::TOMUSICPORT);
   si_me.sin_addr.s_addr = htonl(INADDR_ANY);
   if (bind (s, (struct sockaddr *) &si_me, sizeof (si_me)) == -1)
     throw std::runtime_error ("miditoudp: could bind socket to port");
 
   // Wait for start message
-  if (recvfrom (s, buffer, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
+  OurUDPProtocol::startPackage startPackage;
+
+  if (recvfrom (s, &startPackage, sizeof (startPackage), 0, (struct sockaddr *) &si_other, &slen) == -1)
     throw std::runtime_error ("miditoudp: recvfrom()");
-  else if (buffer[0] != 4712.0)
+  else if (startPackage.magicNumber != OurUDPProtocol::MAGIC)
     throw std::runtime_error ("miditoudp: bogus start message");
-  real stoptime = buffer[1];
+  double stoptime = startPackage.stopTime;
 
-  std::for_each (std::begin (buffer), std::end (buffer),
-		 [] (real &x) { x = 0.0; });
+  std::for_each (std::begin (buffer.keysPressed), std::end (buffer.keysPressed),
+		 [] (double &x) { x = 0.0; });
 
 
-  RTClock clock (TIMESTEP);
-  constexpr int buflen = sizeof (buffer);
-  real t = 0.0;
+  RTClock clock (OurUDPProtocol::TIMESTEP);
+  double t = 0.0;
 
   while (t < stoptime) {
-    buffer[0] = t;
-    if (sendto (s, buffer, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
+    buffer.timestamp = t;
+    if (sendto (s, &buffer, sizeof(buffer), 0, (struct sockaddr *) &si_other, slen) == -1)
       throw std::runtime_error ("miditoudp: sendto()");
-    t += TIMESTEP;
+    t += OurUDPProtocol::TIMESTEP;
     // std::cerr << "-";
     clock.sleepNext ();
   }
