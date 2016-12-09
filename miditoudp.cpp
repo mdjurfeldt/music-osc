@@ -92,13 +92,13 @@ main (int argc, char* argv[])
     throw std::runtime_error ("miditoudp: could bind socket to port");
 
   // Wait for start message
-  OurUDPProtocol::startPackage startPackage;
+  OurUDPProtocol::startPackage startBuffer;
 
-  if (recvfrom (s, &startPackage, sizeof (startPackage), 0, (struct sockaddr *) &si_other, &slen) == -1)
+  if (recvfrom (s, &startBuffer, sizeof (startBuffer), 0, (struct sockaddr *) &si_other, &slen) == -1)
     throw std::runtime_error ("miditoudp: recvfrom()");
-  else if (startPackage.magicNumber != OurUDPProtocol::MAGIC)
+  else if (startBuffer.magicNumber != OurUDPProtocol::MAGIC)
     throw std::runtime_error ("miditoudp: bogus start message");
-  double stoptime = startPackage.stopTime;
+  double stoptime = startBuffer.stopTime;
 
   std::for_each (std::begin (buffer.keysPressed), std::end (buffer.keysPressed),
 		 [] (double &x) { x = 0.0; });
