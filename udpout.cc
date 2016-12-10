@@ -40,16 +40,12 @@ main (int args, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (args, argv);
 
-  MUSIC::ContInputPort* wavedata =
-    setup->publishContInput ("in");
-
   MPI::Intracomm comm = setup->communicator ();
-  int nProcesses = comm.Get_size (); // how many processes are there?
-  if (nProcesses > 1)
-    {
-      std::cout << "udpout: needs to run in a single MPI process\n";
-      exit (1);
-    }
+
+  if (comm.Get_size () > 1) {
+    std::cerr << "udpout: needs to run in a single MPI process\n";
+    exit (1);
+  }
 
   // Initialize UDP socket
   struct sockaddr_in si_other;
@@ -65,15 +61,21 @@ main (int args, char* argv[])
   if (inet_aton(OurUDPProtocol::MIDISERVER_IP, &si_other.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
+  MUSIC::ContInputPort* keyPort =
+    setup->publishContInput ("in");
+
   // Declare where in memory to put data
   MUSIC::ArrayData dmap (&buffer.keysPressed,
 			 MPI_DOUBLE,
 			 0,
 			 OurUDPProtocol::KEYBOARDSIZE);
-  wavedata->map (&dmap, DELAY, 1, false);
+  keyPort->map (&dmap, DELAY, 1, false);
 
   double stoptime;
-  setup->config ("stoptime", &stoptime);
+  if (!setup->config ("stoptime", &stoptime)) {
+    std::cerr << "stoptime must be set in the MUSIC config file" << std::endl;
+    exit(1);
+  }
 
   startBuffer.magicNumber = OurUDPProtocol::MAGIC;
   startBuffer.stopTime = stoptime - OurUDPProtocol::TIMESTEP;

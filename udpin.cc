@@ -45,26 +45,28 @@ main (int argc, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
-  MUSIC::ContOutputPort* wavedata =
-    setup->publishContOutput ("out");
-
   MPI::Intracomm comm = setup->communicator ();
-  int nProcesses = comm.Get_size (); // how many processes are there?
-  if (nProcesses > 1)
-    {
-      std::cout << "udpin: needs to run in a single MPI process\n";
-      exit (1);
-    }
+
+  if (comm.Get_size () > 1) {
+    std::cerr << "udpin: needs to run in a single MPI process\n";
+    exit (1);
+  }
+
+  MUSIC::ContOutputPort* keyPort =
+    setup->publishContOutput ("out");
 
   // Declare what data we have to export
   MUSIC::ArrayData dmap (&buffer.keysPressed,
 			 MPI_DOUBLE,
 			 0,
 			 OurUDPProtocol::KEYBOARDSIZE);
-  wavedata->map (&dmap, 1); // buffer only one tick
+  keyPort->map (&dmap, 1); // buffer only one tick
   
   double stoptime;
-  setup->config ("stoptime", &stoptime);
+  if (!setup->config ("stoptime", &stoptime)) {
+    std::cerr << "stoptime must be set in the MUSIC config file" << std::endl;
+    exit(1);
+  }
 
   // Setup socket
   struct sockaddr_in si_other;
