@@ -56,11 +56,21 @@ main (int argc, char* argv[])
     setup->publishContOutput ("out");
 
   // Declare what data we have to export
-  MUSIC::ArrayData dmap (&buffer.keysPressed,
-			 MPI_DOUBLE,
-			 0,
-			 OurUDPProtocol::KEYBOARDSIZE);
-  keyPort->map (&dmap, 1); // buffer only one tick
+  MUSIC::ArrayData dataMap (&buffer.keysPressed,
+			    MPI_DOUBLE,
+			    0,
+			    OurUDPProtocol::KEYBOARDSIZE);
+  keyPort->map (&dataMap, 1); // buffer only one tick
+  
+  MUSIC::ContOutputPort* commandPort =
+    setup->publishContOutput ("commands");
+
+  // Declare data to export
+  MUSIC::ArrayData commandMap (&buffer.commandKeys,
+			       MPI_DOUBLE,
+			       0,
+			       OurUDPProtocol::COMMANDKEYS);
+  commandPort->map (&commandMap, 1); // buffer only one tick
   
   double stoptime;
   if (!setup->config ("stoptime", &stoptime)) {
@@ -69,22 +79,24 @@ main (int argc, char* argv[])
   }
 
   // Setup socket
-  struct sockaddr_in si_other;
-  int s, i;
-  unsigned int slen=sizeof(si_other);
+  int udpSocket;
+  struct sockaddr_in udpAddress;
+  unsigned int udpAddressSize=sizeof(udpAddress);
   
-  if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  if ((udpSocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpin: couldn't create socket");
 
-  memset((char *) &si_other, 0, sizeof(si_other));
-  si_other.sin_family = AF_INET;
-  si_other.sin_port = htons (OurUDPProtocol::TOMUSICPORT);
-  if (inet_aton (OurUDPProtocol::MIDISERVER_IP, &si_other.sin_addr) == 0)
+  memset((char *) &udpAddress, 0, sizeof(udpAddress));
+  udpAddress.sin_family = AF_INET;
+  udpAddress.sin_port = htons (OurUDPProtocol::TOMUSICPORT);
+  if (inet_aton (OurUDPProtocol::MIDISERVER_IP, &udpAddress.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
   startBuffer.magicNumber = OurUDPProtocol::MAGIC;
   startBuffer.stopTime = stoptime;
-  if (sendto (s, &startBuffer, sizeof(startBuffer), 0, (struct sockaddr *) &si_other, slen) == -1)
+  if (sendto (udpSocket, &startBuffer, sizeof(startBuffer), 0,
+	      (struct sockaddr *) &udpAddress, udpAddressSize)
+      == -1)
     throw std::runtime_error ("udpin: failed to send start message");
 
   // Not really necessary since static memory is zero from start
@@ -98,14 +110,15 @@ main (int argc, char* argv[])
     double timeStamp;
 
     do {
-      if (recvfrom (s, &buffer, sizeof(buffer), 0, (struct sockaddr *) &si_other, &slen)
+      if (recvfrom (udpSocket, &buffer, sizeof(buffer), 0,
+		    (struct sockaddr *) &udpAddress, &udpAddressSize)
 	  == -1)
 	std::runtime_error ("udpin: recvfrom()");
       timeStamp = buffer.timestamp;
     } while (timeStamp + DELAY < runtime->time ());
   }
 
-  close (s);
+  close (udpSocket);
 
   runtime->finalize ();
 

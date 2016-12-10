@@ -48,17 +48,17 @@ main (int args, char* argv[])
   }
 
   // Initialize UDP socket
-  struct sockaddr_in si_other;
-  int s;
-  unsigned int slen = sizeof (si_other);
+  int udpSocket;
+  struct sockaddr_in udpAddress;
+  unsigned int udpAddressSize = sizeof (udpAddress);
 
-  if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  if ((udpSocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpout: couldn't create socket");
 
-  memset((char *) &si_other, 0, sizeof(si_other));
-  si_other.sin_family = AF_INET;
-  si_other.sin_port = htons (OurUDPProtocol::FROMMUSICPORT);
-  if (inet_aton(OurUDPProtocol::MIDISERVER_IP, &si_other.sin_addr) == 0)
+  memset((char *) &udpAddress, 0, sizeof(udpAddress));
+  udpAddress.sin_family = AF_INET;
+  udpAddress.sin_port = htons (OurUDPProtocol::FROMMUSICPORT);
+  if (inet_aton(OurUDPProtocol::MIDISERVER_IP, &udpAddress.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
   MUSIC::ContInputPort* keyPort =
@@ -79,7 +79,9 @@ main (int args, char* argv[])
 
   startBuffer.magicNumber = OurUDPProtocol::MAGIC;
   startBuffer.stopTime = stoptime - OurUDPProtocol::TIMESTEP;
-  if (sendto (s, &startBuffer, sizeof (startBuffer), 0, (struct sockaddr *) &si_other, slen) == -1)
+  if (sendto (udpSocket, &startBuffer, sizeof (startBuffer), 0,
+	      (struct sockaddr *) &udpAddress, udpAddressSize)
+      == -1)
     throw std::runtime_error ("udpout: failed to send start message");
 
   // Unnecessary clearing of buffer
@@ -89,7 +91,9 @@ main (int args, char* argv[])
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
   for (; runtime->time () < stoptime; runtime->tick ()) {
     buffer.timestamp = runtime->time ();
-    if (sendto (s, &buffer, sizeof(buffer), 0, (struct sockaddr *) &si_other, slen) == -1)
+    if (sendto (udpSocket, &buffer, sizeof(buffer), 0,
+		(struct sockaddr *) &udpAddress, udpAddressSize)
+	== -1)
       throw std::runtime_error ("udpout: sendto()");
   }
 
