@@ -34,7 +34,7 @@ rtclock.o: rtclock.h rtclock.cpp
 simproxy: simproxy.cc
 	$(MPICXX) $(CXXFLAGS) -o simproxy simproxy.cc -lmusic
 
-filetobrain: filetobrain.cc
+filetobrain: filetobrain.cc OurUDPProtocol.hh
 	$(MPICXX) $(CXXFLAGS) -o filetobrain filetobrain.cc -lmusic
 
 braintofile: braintofile.cc
