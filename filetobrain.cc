@@ -24,15 +24,11 @@
 #include <fstream>
 #include <music.hh>
 
-#define TIMESTEP 0.010
-#define KEYBOARD_SIZE 88
+#include "OurUDPProtocol.hh"
 
-// Use double for communication
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
 
 MPI::Intracomm comm;
-real keyboard[KEYBOARD_SIZE];
+struct OurUDPProtocol::toMusicPackage package;
 
 
 int
@@ -40,8 +36,9 @@ main (int argc, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
 
-  if (argc != 2) {
-    std::cerr << "Usage: filetobrain <filname>" << std::endl;
+  if ((argc < 2) or (argc > 3)) {
+    std::cerr << "Usage: filetobrain <musicfile>" << std::endl
+	      << "or:    filetobrain <musicfile> <commandfile>" << std::endl;
     exit(1);
   }
 
@@ -53,9 +50,19 @@ main (int argc, char* argv[])
   }
 
   
-  MUSIC::ContOutputPort* theport =
-    setup->publishContOutput ("out");
+  std::ifstream commandfile;
+  bool usecommandfile = false;
 
+  if (argc >= 3) {
+    usecommandfile = true;
+    commandfile.open(argv[2]);
+    if (!commandfile.is_open()) {
+      std::cerr << "Can not open file " << argv[2] << " for reading." << std::endl;
+      exit(1);
+    }
+  }
+
+  
   comm = setup->communicator ();
 
   if (comm.Get_size() != 1) {
@@ -63,25 +70,53 @@ main (int argc, char* argv[])
     exit(1);
   }
 
-  // Declare what data we have to export
-  MUSIC::ArrayData dmap (keyboard,
-			 MPI_MYREAL,
-			 0,
-			 KEYBOARD_SIZE);
-  theport->map (&dmap);
-  
-  double stoptime;
-  setup->config ("stoptime", &stoptime);
+  // Describe the out port
+  MUSIC::ContOutputPort* theport =
+    setup->publishContOutput ("out");
 
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
+  MUSIC::ArrayData dmap (&package.keysPressed,
+			 MPI_DOUBLE,
+			 0,
+			 OurUDPProtocol::KEYBOARDSIZE);
+  theport->map (&dmap);
+
+  MUSIC::ContOutputPort* commandport;
+  if (usecommandfile) {
+    commandport = setup->publishContOutput ("commands");
+
+    MUSIC::ArrayData dmap (&package.commandKeys,
+			   MPI_DOUBLE,
+			   0,
+			   OurUDPProtocol::COMMANDKEYS);
+    commandport->map (&dmap);
+  }
+
+
+  double stoptime;
+  if (!setup->config ("stoptime", &stoptime))
+    throw std::runtime_error("filetobrain: stoptime must be set from the music configuration file");
+
+  double nextCommandTime;
+
+  if (usecommandfile)
+    commandfile >> nextCommandTime;
+  
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   std::cout << "Starting to feed file" << std::endl;
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    for (int i=0; i<KEYBOARD_SIZE; i++) {
-      keyfile >> keyboard[i];
+    for (int i=0; i<OurUDPProtocol::KEYBOARDSIZE; i++) {
+      keyfile >> package.keysPressed[i];
     }
+
+    if (usecommandfile and (runtime->time() >= nextCommandTime)) {
+      for (int i=0; i<OurUDPProtocol::COMMANDKEYS; ++i)
+	commandfile >> package.commandKeys[i];
+      std::cerr << "Command at " << nextCommandTime << std::endl;
+      commandfile >> nextCommandTime;
+    }
+
     usleep(10000);
-    std::cerr << "<";
   }
 
   runtime->finalize ();
