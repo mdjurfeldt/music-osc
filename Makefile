@@ -31,7 +31,7 @@ osctoudp: osctoudp.cc rtclock.o
 rtclock.o: rtclock.h rtclock.cpp
 	$(MPICXX) $(CXXFLAGS) -c rtclock.cpp
 
-simproxy: simproxy.cc
+simproxy: simproxy.cc OurUDPProtocol.hh
 	$(MPICXX) $(CXXFLAGS) -o simproxy simproxy.cc -lmusic
 
 filetobrain: filetobrain.cc OurUDPProtocol.hh

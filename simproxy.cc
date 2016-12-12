@@ -21,60 +21,52 @@
 #include <music.hh>
 #include <cstring>
 
-#define TIMESTEP 0.001
-#define VECTOR_DIM 88
+#include "OurUDPProtocol.hh"
 
-#if 0
-typedef float real;
-#define MPI_MYREAL MPI::FLOAT
-#else
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
-#endif
+struct OurUDPProtocol::toMusicPackage package;
+struct OurUDPProtocol::fromMusicPackage outpackage;
 
-int
-main (int argc, char* argv[])
-{
+
+int main (int argc, char* argv[]) {
+
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
 
-  int width = atoi (argv[1]); // command line arg gives width
+  MUSIC::ContInputPort * commands = setup->publishContInput ("commands");
+  MUSIC::ContInputPort * in = setup->publishContInput ("sensorpool");
+  MUSIC::ContOutputPort * out = setup->publishContOutput ("motorpool");
 
-  MUSIC::ContInputPort * in = setup->publishContInput ("in");
-  MUSIC::ContOutputPort * out = setup->publishContOutput ("out");
+  MUSIC::ArrayData commandMap (&package.commandKeys,
+			       MPI_DOUBLE,
+			       0,
+			       OurUDPProtocol::COMMANDKEYS);
+  commands->map (&commandMap, 0.0, 1, false);
 
-  real inBuf[width];
-  MUSIC::ArrayData inMap (inBuf,
-			  MPI_MYREAL,
+  MUSIC::ArrayData inMap (&package.keysPressed,
+			  MPI_DOUBLE,
 			  0,
-			  width);
+			  OurUDPProtocol::KEYBOARDSIZE);
   in->map (&inMap, 0.0, 1, false);
 
-  real outBuf[width];
-
-  for (int i = 0; i < width; ++i)
-    {
-      inBuf[i] = 0.0;
-      outBuf[i] = 0.0;
-    }
-
-  MUSIC::ArrayData outMap (outBuf,
-			   MPI_MYREAL,
+  MUSIC::ArrayData outMap (&outpackage.keysPressed,
+			   MPI_DOUBLE,
 			   0,
-			   width);
+			   OurUDPProtocol::KEYBOARDSIZE);
   out->map (&outMap, 1);
   
   double stoptime;
-  setup->config ("stoptime", &stoptime);
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
-  for (; runtime->time () < stoptime; runtime->tick ())
-    {
-      memcpy (outBuf, inBuf, sizeof (outBuf));
-      for (int i = 0; i < width; ++i)
-	if (inBuf[i] != 0.0)
-	  // Press another key too
-	  outBuf[(i + 4) % width] = 1.0;
-      // std::cerr << "!";
+  if (!setup->config ("stoptime", &stoptime))
+    throw std::runtime_error("simproxy: stoptime must be set in the MUSIC configuration file");
+
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
+
+  for (; runtime->time () < stoptime; runtime->tick ()) {
+    for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i) {
+      outpackage.keysPressed[i] = package.keysPressed[i];
+      if (package.keysPressed[i] != 0.0)
+	// Press another key too
+	outpackage.keysPressed[(i + 4) % OurUDPProtocol::KEYBOARDSIZE] = 1.0;
     }
+  }
 
   runtime->finalize ();
 
