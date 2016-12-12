@@ -27,87 +27,76 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define TIMESTEP 0.001
-#define DELAY 0.0
-#define SRV_IP "127.0.0.1"
-#define PORT 9930
+#include "OurUDPProtocol.hh"
 
-#if 0
-typedef float real;
-#define MPI_MYREAL MPI::FLOAT
-#else
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
-#endif
+#define DELAY 0.0
+
+struct OurUDPProtocol::fromMusicPackage buffer;
+struct OurUDPProtocol::startPackage startBuffer;
+
 
 int
 main (int args, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (args, argv);
 
-  MUSIC::ContInputPort* wavedata =
-    setup->publishContInput ("in");
-
   MPI::Intracomm comm = setup->communicator ();
-  int nProcesses = comm.Get_size (); // how many processes are there?
-  if (nProcesses > 1)
-    {
-      std::cout << "udpout: needs to run in a single MPI process\n";
-      exit (1);
-    }
 
-  int width = 0;
-  if (wavedata->hasWidth ())
-    width = wavedata->width ();
-  else
-    comm.Abort (1);
-  int nLocalVars = width;
+  if (comm.Get_size () > 1) {
+    std::cerr << "udpout: needs to run in a single MPI process\n";
+    exit (1);
+  }
 
   // Initialize UDP socket
-  struct sockaddr_in si_other;
-  int s;
-  unsigned int slen = sizeof (si_other);
-  int dataSize = nLocalVars * sizeof (real);
-  int buflen = sizeof (real) + dataSize;
-  real buf[1 + nLocalVars];
+  int udpSocket;
+  struct sockaddr_in udpAddress;
+  unsigned int udpAddressSize = sizeof (udpAddress);
 
-  if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  if ((udpSocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpout: couldn't create socket");
 
-  memset((char *) &si_other, 0, sizeof(si_other));
-  si_other.sin_family = AF_INET;
-  si_other.sin_port = htons (PORT);
-  if (inet_aton(SRV_IP, &si_other.sin_addr) == 0)
+  memset((char *) &udpAddress, 0, sizeof(udpAddress));
+  udpAddress.sin_family = AF_INET;
+  udpAddress.sin_port = htons (OurUDPProtocol::FROMMUSICPORT);
+  if (inet_aton(OurUDPProtocol::MIDISERVER_IP, &udpAddress.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
-  real* data = &buf[1];
-    
+  MUSIC::ContInputPort* keyPort =
+    setup->publishContInput ("in");
+
   // Declare where in memory to put data
-  MUSIC::ArrayData dmap (data,
-			 MPI_MYREAL,
+  MUSIC::ArrayData dmap (&buffer.keysPressed,
+			 MPI_DOUBLE,
 			 0,
-			 nLocalVars);
-  wavedata->map (&dmap, DELAY, 1, false);
+			 OurUDPProtocol::KEYBOARDSIZE);
+  keyPort->map (&dmap, DELAY, 1, false);
 
   double stoptime;
-  setup->config ("stoptime", &stoptime);
+  if (!setup->config ("stoptime", &stoptime)) {
+    std::cerr << "stoptime must be set in the MUSIC config file" << std::endl;
+    exit(1);
+  }
 
-  buf[0] = 4711.0;
-  buf[1] = stoptime - TIMESTEP;
-  if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
+  startBuffer.magicNumber = OurUDPProtocol::MAGICFROMMUSIC;
+  startBuffer.stopTime = stoptime - OurUDPProtocol::TIMESTEP;
+  if (sendto (udpSocket, &startBuffer, sizeof (startBuffer), 0,
+	      (struct sockaddr *) &udpAddress, udpAddressSize)
+      == -1)
     throw std::runtime_error ("udpout: failed to send start message");
-  
-  for (int i = 0; i <= nLocalVars; ++i)
-    buf[0] = 0.0;
 
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
-  for (; runtime->time () < stoptime; runtime->tick ())
-    {
-      buf[0] = runtime->time ();
-      if (sendto (s, buf, buflen, 0, (struct sockaddr *) &si_other, slen) == -1)
-	throw std::runtime_error ("udpout: sendto()");
-      // std::cerr << ">";
-    }
+  // Unnecessary clearing of buffer
+  for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
+    buffer.keysPressed[i] = 0.0;
+
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
+  for (; runtime->time () < stoptime; runtime->tick ()) {
+    buffer.timestamp = runtime->time ();
+    if (sendto (udpSocket, &buffer, sizeof(buffer), 0,
+		(struct sockaddr *) &udpAddress, udpAddressSize)
+	== -1)
+      throw std::runtime_error ("udpout: sendto()");
+  }
+
   runtime->finalize ();
   
   delete runtime;

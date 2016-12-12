@@ -10,19 +10,19 @@
 #include <algorithm>
 #include <rtmidi/RtMidi.h>
 
-#define VECTOR_DIM 88
-#define PORT 9930
-
-#if 0
-typedef float real;
-#else
-typedef double real;
-#endif
+#include "OurUDPProtocol.hh"
 
 RtMidiOut *midiout;
 std::vector<unsigned char> message;
 
-void osc_key_pressed (real timeStamp, int id)
+struct OurUDPProtocol::fromMusicPackage buffer;
+struct OurUDPProtocol::startPackage startBuffer;
+
+bool pressedState[OurUDPProtocol::KEYBOARDSIZE];
+
+
+
+void midi_key_pressed (double timeStamp, int id)
 {
   // New key press
   message[0] = 144; // Note on
@@ -32,7 +32,7 @@ void osc_key_pressed (real timeStamp, int id)
 }
 
 void
-osc_key_released (real timeStamp, int id)
+midi_key_released (double timeStamp, int id)
 {
   // New key release
   message[0] = 128; // Note off
@@ -81,55 +81,51 @@ void init_midi(void) {
 int
 main (int argc, char* argv[])
 {
-  struct sockaddr_in si_me, si_other;
-  int s;
-  unsigned int slen = sizeof (si_other);
+  int udpSocket;
+  struct sockaddr_in udpAddressMe, udpAddress;
+  unsigned int udpAddressSize = sizeof (udpAddress);
 
-  if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    throw std::runtime_error ("udptoosc: couldn't create socket");
+  if ((udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    throw std::runtime_error ("udptomidi: couldn't create socket");
 
-  memset ((char *) &si_me, 0, sizeof (si_me));
-  si_me.sin_family = AF_INET;
-  si_me.sin_port = htons(PORT);
-  si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-  if (bind (s, (struct sockaddr *) &si_me, sizeof (si_me)) == -1)
-    throw std::runtime_error ("udptoosc: could bind socket to port");
+  memset ((char *) &udpAddressMe, 0, sizeof (udpAddressMe));
+  udpAddressMe.sin_family = AF_INET;
+  udpAddressMe.sin_port = htons(OurUDPProtocol::FROMMUSICPORT);
+  udpAddressMe.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind (udpSocket, (struct sockaddr *) &udpAddressMe, sizeof (udpAddressMe)) == -1)
+    throw std::runtime_error ("udptomidi: could bind socket to port");
 
-  real buf[1 + VECTOR_DIM];
-  real state[VECTOR_DIM];
-
-  std::fill (std::begin(state), std::end(state), 0.0);
-  
   init_midi();
 
   // Wait for start message
-  if (recvfrom (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, &slen) == -1)
-    throw std::runtime_error ("udptoosc: recvfrom()");
-  else if (buf[0] != 4711.0)
-    throw std::runtime_error ("udptoosc: bogus start message");
-  real stoptime = buf[1];
+  if (recvfrom (udpSocket, &startBuffer, sizeof(startBuffer), 0, (struct sockaddr *) &udpAddress, &udpAddressSize) == -1)
+    throw std::runtime_error ("udptomidi: recvfrom()");
+  else if (startBuffer.magicNumber != OurUDPProtocol::MAGICFROMMUSIC)
+    throw std::runtime_error ("udptomidi: bogus start message");
+  double stoptime = startBuffer.stopTime;
 
-  constexpr int buflen = sizeof (buf);
-  buf[0] = 0.0;
-  while (buf[0] < stoptime)
+  buffer.timestamp = 0.0;
+  while (buffer.timestamp < stoptime)
     {
-      if (recvfrom(s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
+      if (recvfrom(udpSocket, &buffer, sizeof(buffer), 0, (struct sockaddr *) &udpAddress, &udpAddressSize)
 	  == -1)
-	throw std::runtime_error ("udptoosc: failed to receive packet");
-      // std::cerr << ".";
-      for (int i = 0; i < VECTOR_DIM; ++i)
-	if (buf[i + 1] != state[i])
-	  {
-	    real timeStamp = buf[0];
-	    if (buf[i + 1] != 0.0)
-	      osc_key_pressed (timeStamp, i);
-	    else
-	      osc_key_released (timeStamp, i);
-	    state[i] = buf[i + 1];
+	throw std::runtime_error ("udptomidi: failed to receive packet");
+
+      for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
+	if (buffer.keysPressed[i] > 0.5) {
+	  if (!pressedState[i]) { // This was news
+	    midi_key_pressed(buffer.timestamp, i);
+	    pressedState[i] = true;
 	  }
+	} else {
+	  if (pressedState[i]) { // This was news
+	    midi_key_released(buffer.timestamp, i);
+	    pressedState[i] = false;
+	  }
+	}
     }
 
-  close(s);
+  close(udpSocket);
   delete midiout;
   return 0;
 }

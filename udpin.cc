@@ -30,103 +30,95 @@
 #include <netinet/in.h>
 #include <music.hh>
 
-// This is the expected time difference between incoming UDP packets
-// as well as the MUSIC inter-tick-interval
-
-#define TIMESTEP 0.001
+#include "OurUDPProtocol.hh"
 
 // This is the modeled time delay. We maintain
 // t == UDP timestamp + DELAY.
 
-#define DELAY TIMESTEP
+#define DELAY OurUDPProtocol::TIMESTEP
 
-#define SRV_IP "127.0.0.1"
-#define PORT 9931
-
-#if 0
-typedef float real;
-#define MPI_MYREAL MPI::FLOAT
-#else
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
-#endif
+struct OurUDPProtocol::toMusicPackage buffer;
+struct OurUDPProtocol::startPackage startBuffer;
 
 int
 main (int argc, char* argv[])
 {
   MUSIC::Setup* setup = new MUSIC::Setup (argc, argv);
   
-  int width = atoi (argv[1]); // command line arg gives width
+  MPI::Intracomm comm = setup->communicator ();
 
-  MUSIC::ContOutputPort* wavedata =
+  if (comm.Get_size () > 1) {
+    std::cerr << "udpin: needs to run in a single MPI process\n";
+    exit (1);
+  }
+
+  MUSIC::ContOutputPort* keyPort =
     setup->publishContOutput ("out");
 
-  MPI::Intracomm comm = setup->communicator ();
-  int nProcesses = comm.Get_size (); // how many processes are there?
-  if (nProcesses > 1)
-    {
-      std::cout << "udpin: needs to run in a single MPI process\n";
-      exit (1);
-    }
-
-  int nLocalVars = width;
-  real* data = new real[nLocalVars];
-  for (int i = 0; i < nLocalVars; ++i)
-    data[i] = 0.0;
-    
   // Declare what data we have to export
-  MUSIC::ArrayData dmap (data,
-			 MPI_MYREAL,
-			 0,
-			 nLocalVars);
-  wavedata->map (&dmap, 1); // buffer only one tick
+  MUSIC::ArrayData dataMap (&buffer.keysPressed,
+			    MPI_DOUBLE,
+			    0,
+			    OurUDPProtocol::KEYBOARDSIZE);
+  keyPort->map (&dataMap, 1); // buffer only one tick
+  
+  MUSIC::ContOutputPort* commandPort =
+    setup->publishContOutput ("commands");
+
+  // Declare data to export
+  MUSIC::ArrayData commandMap (&buffer.commandKeys,
+			       MPI_DOUBLE,
+			       0,
+			       OurUDPProtocol::COMMANDKEYS);
+  commandPort->map (&commandMap, 1); // buffer only one tick
   
   double stoptime;
-  setup->config ("stoptime", &stoptime);
+  if (!setup->config ("stoptime", &stoptime)) {
+    std::cerr << "stoptime must be set in the MUSIC config file" << std::endl;
+    exit(1);
+  }
 
   // Setup socket
-  struct sockaddr_in si_other;
-  int s, i;
-  unsigned int slen=sizeof(si_other);
-  int dataSize = nLocalVars * sizeof (real);
-  int buflen = sizeof (real) + dataSize;
-  real buf[1 + nLocalVars];
-
-  if ((s = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  int udpSocket;
+  struct sockaddr_in udpAddress;
+  unsigned int udpAddressSize=sizeof(udpAddress);
+  
+  if ((udpSocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udpin: couldn't create socket");
 
-  memset((char *) &si_other, 0, sizeof(si_other));
-  si_other.sin_family = AF_INET;
-  si_other.sin_port = htons (PORT);
-  if (inet_aton (SRV_IP, &si_other.sin_addr) == 0)
+  memset((char *) &udpAddress, 0, sizeof(udpAddress));
+  udpAddress.sin_family = AF_INET;
+  udpAddress.sin_port = htons (OurUDPProtocol::TOMUSICPORT);
+  if (inet_aton (OurUDPProtocol::MIDISERVER_IP, &udpAddress.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
-  buf[0] = 4712.0;
-  buf[1] = stoptime;
-  if (sendto (s, buf, 2 * sizeof (real), 0, (struct sockaddr *) &si_other, slen) == -1)
+  startBuffer.magicNumber = OurUDPProtocol::MAGICTOMUSIC;
+  startBuffer.stopTime = stoptime;
+  if (sendto (udpSocket, &startBuffer, sizeof(startBuffer), 0,
+	      (struct sockaddr *) &udpAddress, udpAddressSize)
+      == -1)
     throw std::runtime_error ("udpin: failed to send start message");
-  
-  for (int i = 0; i <= nLocalVars; ++i)
-    buf[i] = 0.0;
 
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
+  // Not really necessary since static memory is zero from start
+  for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
+    buffer.keysPressed[i] = 0.0;
+
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   // Simulation loop
-  for (; runtime->time () < stoptime; runtime->tick ())
-    {
-      real timeStamp;
-      do
-	{
-	  if (recvfrom (s, buf, buflen, 0, (struct sockaddr *) &si_other, &slen)
-	      == -1)
-	    std::runtime_error ("udpin: recvfrom()");
-	  timeStamp = buf[0];
-	}
-      while (timeStamp + DELAY < runtime->time ());
-      memcpy (data, &buf[1], dataSize);
-    }
+  for (; runtime->time () < stoptime; runtime->tick ()) {
+    double timeStamp;
 
-  close (s);
+    do {
+      if (recvfrom (udpSocket, &buffer, sizeof(buffer), 0,
+		    (struct sockaddr *) &udpAddress, &udpAddressSize)
+	  == -1)
+	std::runtime_error ("udpin: recvfrom()");
+      timeStamp = buffer.timestamp;
+    } while (timeStamp + DELAY < runtime->time ());
+  }
+
+  close (udpSocket);
 
   runtime->finalize ();
 
