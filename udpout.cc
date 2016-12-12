@@ -77,7 +77,7 @@ main (int args, char* argv[])
     exit(1);
   }
 
-  startBuffer.magicNumber = OurUDPProtocol::MAGIC;
+  startBuffer.magicNumber = OurUDPProtocol::MAGICFROMMUSIC;
   startBuffer.stopTime = stoptime - OurUDPProtocol::TIMESTEP;
   if (sendto (udpSocket, &startBuffer, sizeof (startBuffer), 0,
 	      (struct sockaddr *) &udpAddress, udpAddressSize)

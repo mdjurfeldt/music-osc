@@ -81,33 +81,33 @@ void init_midi(void) {
 int
 main (int argc, char* argv[])
 {
-  struct sockaddr_in si_me, si_other;
-  int s;
-  unsigned int slen = sizeof (si_other);
+  int udpSocket;
+  struct sockaddr_in udpAddressMe, udpAddress;
+  unsigned int udpAddressSize = sizeof (udpAddress);
 
-  if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+  if ((udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     throw std::runtime_error ("udptomidi: couldn't create socket");
 
-  memset ((char *) &si_me, 0, sizeof (si_me));
-  si_me.sin_family = AF_INET;
-  si_me.sin_port = htons(OurUDPProtocol::FROMMUSICPORT);
-  si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-  if (bind (s, (struct sockaddr *) &si_me, sizeof (si_me)) == -1)
+  memset ((char *) &udpAddressMe, 0, sizeof (udpAddressMe));
+  udpAddressMe.sin_family = AF_INET;
+  udpAddressMe.sin_port = htons(OurUDPProtocol::FROMMUSICPORT);
+  udpAddressMe.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind (udpSocket, (struct sockaddr *) &udpAddressMe, sizeof (udpAddressMe)) == -1)
     throw std::runtime_error ("udptomidi: could bind socket to port");
 
   init_midi();
 
   // Wait for start message
-  if (recvfrom (s, &startBuffer, sizeof(startBuffer), 0, (struct sockaddr *) &si_other, &slen) == -1)
+  if (recvfrom (udpSocket, &startBuffer, sizeof(startBuffer), 0, (struct sockaddr *) &udpAddress, &udpAddressSize) == -1)
     throw std::runtime_error ("udptomidi: recvfrom()");
-  else if (startBuffer.magicNumber != OurUDPProtocol::MAGIC)
+  else if (startBuffer.magicNumber != OurUDPProtocol::MAGICFROMMUSIC)
     throw std::runtime_error ("udptomidi: bogus start message");
   double stoptime = startBuffer.stopTime;
 
   buffer.timestamp = 0.0;
   while (buffer.timestamp < stoptime)
     {
-      if (recvfrom(s, &buffer, sizeof(buffer), 0, (struct sockaddr *) &si_other, &slen)
+      if (recvfrom(udpSocket, &buffer, sizeof(buffer), 0, (struct sockaddr *) &udpAddress, &udpAddressSize)
 	  == -1)
 	throw std::runtime_error ("udptomidi: failed to receive packet");
 
@@ -125,7 +125,7 @@ main (int argc, char* argv[])
 	}
     }
 
-  close(s);
+  close(udpSocket);
   delete midiout;
   return 0;
 }

@@ -16,10 +16,10 @@ mpi: udpin udpout oscin oscout
 
 test: simproxy filetobrain braintofile
 
-udpin: udpin.cc
+udpin: udpin.cc OurUDPProtocol.hh
 	$(MPICXX) $(CXXFLAGS) -o udpin udpin.cc -lmusic
 
-udpout: udpout.cc
+udpout: udpout.cc OurUDPProtocol.hh
 	$(MPICXX) $(CXXFLAGS) -o udpout udpout.cc -lmusic
 
 udptoosc: udptoosc.cc
@@ -49,8 +49,8 @@ oscin: oscin.cc
 minimalbrain: minimalbrain.cpp
 	$(MPICXX) $(CXXFLAGS) -fopenmp -I ${PBCPNNBASE} -I ${PBCPNNBASE}/build-music -o minimalbrain $(LOFLAGS) minimalbrain.cpp -L ${PBCPNNBASE}/build-music/base -lpbcpnn -lmusic
 
-udptomidi: udptomidi.cpp
+udptomidi: udptomidi.cpp OurUDPProtocol.hh
 	${CXX} -g -o udptomidi udptomidi.cpp -l rtmidi
 
-miditoudp: miditoudp.cpp
+miditoudp: miditoudp.cpp OurUDPProtocol.hh
 	${CXX} -g -o miditoudp  rtclock.o miditoudp.cpp -l rtmidi -l pthread

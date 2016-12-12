@@ -92,7 +92,7 @@ main (int argc, char* argv[])
   if (inet_aton (OurUDPProtocol::MIDISERVER_IP, &udpAddress.sin_addr) == 0)
     throw std::runtime_error ("udpout: inet_aton() failed");
 
-  startBuffer.magicNumber = OurUDPProtocol::MAGIC;
+  startBuffer.magicNumber = OurUDPProtocol::MAGICTOMUSIC;
   startBuffer.stopTime = stoptime;
   if (sendto (udpSocket, &startBuffer, sizeof(startBuffer), 0,
 	      (struct sockaddr *) &udpAddress, udpAddressSize)
