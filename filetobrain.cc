@@ -109,12 +109,12 @@ main (int argc, char* argv[])
 
   std::cout << "Starting to feed file" << std::endl;
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    std::for_each(package.keysPressed.begin(), package.keysPressed.end(),
-		  [&keyfile] (double &key) { keyfile >> key; });
+    std::generate(package.keysPressed.begin(), package.keysPressed.end(),
+		  [&keyfile] () { double d; keyfile >> d; return d; });
 
     if (usecommandfile and (runtime->time() >= nextCommandTime)) {
-      std::for_each(package.commandKeys.begin(), package.commandKeys.end(),
-		    [&commandfile] (double &key) { commandfile >> key; });
+      std::generate(package.commandKeys.begin(), package.commandKeys.end(),
+		    [&commandfile] () { double d; commandfile >> d; return d; });
       std::cerr << "Command at " << nextCommandTime << std::endl;
       commandfile >> nextCommandTime;
       if (commandfile.eof())
