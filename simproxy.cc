@@ -62,12 +62,12 @@ int main (int argc, char* argv[]) {
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i) {
-      outpackage.keysPressed[i] = package.keysPressed[i];
-      if (package.keysPressed[i] != 0.0)
-	// Press another key too
-	outpackage.keysPressed[(i + 4) % OurUDPProtocol::KEYBOARDSIZE] = 1.0;
-    }
+    std::copy(package.keysPressed.begin(), package.keysPressed.end(),
+	      outpackage.keysPressed.begin());
+    std::transform(package.keysPressed.begin(), package.keysPressed.end()-4,
+		   outpackage.keysPressed.begin()+4,
+		   outpackage.keysPressed.begin()+4,
+		   [] (double key, double newkey) { return (key>0.5) ? 1 : newkey; });
 
     for (int i=0; i<OurUDPProtocol::COMMANDKEYS; ++i) {
       if (package.commandKeys[i] != commandKeyState[i]) {
