@@ -26,6 +26,8 @@
 struct OurUDPProtocol::toMusicPackage package;
 struct OurUDPProtocol::fromMusicPackage outpackage;
 
+std::array<double, OurUDPProtocol::COMMANDKEYS> commandKeyState;
+
 
 int main (int argc, char* argv[]) {
 
@@ -65,6 +67,13 @@ int main (int argc, char* argv[]) {
       if (package.keysPressed[i] != 0.0)
 	// Press another key too
 	outpackage.keysPressed[(i + 4) % OurUDPProtocol::KEYBOARDSIZE] = 1.0;
+    }
+
+    for (int i=0; i<OurUDPProtocol::COMMANDKEYS; ++i) {
+      if (package.commandKeys[i] != commandKeyState[i]) {
+	commandKeyState[i] = package.commandKeys[i];
+	std::cout << "commandkey " << i << "=" << commandKeyState[i] << std::endl;
+      }
     }
   }
 
