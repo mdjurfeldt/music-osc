@@ -97,6 +97,10 @@ main (int argc, char* argv[])
     throw std::runtime_error("filetobrain: stoptime must be set from the music configuration file");
 
   double nextCommandTime;
+  double infiniteFuture = 
+    std::numeric_limits<double>::has_infinity ?
+    std::numeric_limits<double>::infinity() :
+    std::numeric_limits<double>::max();
 
   if (usecommandfile)
     commandfile >> nextCommandTime;
@@ -114,6 +118,8 @@ main (int argc, char* argv[])
 	commandfile >> package.commandKeys[i];
       std::cerr << "Command at " << nextCommandTime << std::endl;
       commandfile >> nextCommandTime;
+      if (commandfile.eof())
+	nextCommandTime = infiniteFuture;
     }
 
     usleep(10000);
