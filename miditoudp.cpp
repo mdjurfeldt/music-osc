@@ -59,12 +59,12 @@ void midiEvent (double timestamp, std::vector<unsigned char>* message, void* voi
       break;
 
     case 224: // Pitch bend
-      if ((*message)[1] == 8192) {
+      if ((*message)[2] == 64) {
 	// No more pitch bend
 	package->commandKeys[OurUDPProtocol::PITCHBENDDOWNCOMMAND] = 0.0;
 	package->commandKeys[OurUDPProtocol::PITCHBENDUPCOMMAND] = 0.0;
       }
-      else if ((*message)[1] < 8192)
+      else if ((*message)[2] < 64)
 	// Pitch down
 	package->commandKeys[OurUDPProtocol::PITCHBENDDOWNCOMMAND] = 1.0;
       else

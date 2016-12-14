@@ -29,7 +29,6 @@ public:
   static constexpr int TOMUSICPORT = 9931;
   static constexpr int MAGICFROMMUSIC = 4712;
   static constexpr char const * MIDISERVER_IP = "130.237.221.78"; // wand.pdc.kth.se
-  // static constexpr char const * MIDISERVER_IP = "127.0.0.1";
 
   // Data package received from MUSIC
   struct fromMusicPackage {
