@@ -1,3 +1,5 @@
+#include <array>
+
 class OurUDPProtocol {
 
 public:
@@ -21,17 +23,18 @@ public:
   // Data package sent to MUSIC
   struct toMusicPackage {
     double timestamp;
-    double keysPressed[KEYBOARDSIZE];
-    double commandKeys[COMMANDKEYS];
+    std::array<double, KEYBOARDSIZE> keysPressed;
+    std::array<double, COMMANDKEYS> commandKeys;
   };
   static constexpr int TOMUSICPORT = 9931;
   static constexpr int MAGICFROMMUSIC = 4712;
   static constexpr char const * MIDISERVER_IP = "130.237.221.78"; // wand.pdc.kth.se
-  
+  // static constexpr char const * MIDISERVER_IP = "127.0.0.1";
+
   // Data package received from MUSIC
   struct fromMusicPackage {
     double timestamp;
-    double keysPressed[KEYBOARDSIZE];
+    std::array<double, KEYBOARDSIZE> keysPressed;
   };
   static constexpr int FROMMUSICPORT = 9930;
   static constexpr int MAGICTOMUSIC = 4711;

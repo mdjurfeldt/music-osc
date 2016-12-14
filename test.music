@@ -3,14 +3,13 @@ stoptime = 100.0
 
 [sim]
   binary = ./simproxy
-  args = 88
   
 [source]
   binary = ./udpin
-  args = 88
 
-[udpout]
+[sink]
   binary = ./udpout
 
-source.out -> sim.in [88]
-sim.out -> udpout.in [88]
+source.out -> sim.sensorpool
+source.commands -> sim.commands
+sim.motorpool -> sink.in

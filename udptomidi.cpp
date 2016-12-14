@@ -18,7 +18,7 @@ std::vector<unsigned char> message;
 struct OurUDPProtocol::fromMusicPackage buffer;
 struct OurUDPProtocol::startPackage startBuffer;
 
-bool pressedState[OurUDPProtocol::KEYBOARDSIZE];
+std::array<bool, OurUDPProtocol::KEYBOARDSIZE> pressedState;
 
 
 
@@ -111,18 +111,20 @@ main (int argc, char* argv[])
 	  == -1)
 	throw std::runtime_error ("udptomidi: failed to receive packet");
 
-      for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
-	if (buffer.keysPressed[i] > 0.5) {
-	  if (!pressedState[i]) { // This was news
-	    midi_key_pressed(buffer.timestamp, i);
-	    pressedState[i] = true;
-	  }
-	} else {
-	  if (pressedState[i]) { // This was news
-	    midi_key_released(buffer.timestamp, i);
-	    pressedState[i] = false;
-	  }
-	}
+      std::transform(buffer.keysPressed.begin(), buffer.keysPressed.end(),
+		     pressedState.begin(),
+		     pressedState.begin(),
+		     [] (double &key, bool &state) {
+		       if (key > 0.5) {
+			 if (!state) // This was news
+			   midi_key_pressed(buffer.timestamp, &key-buffer.keysPressed.begin());
+			 return true;
+		       } else {
+			 if (state) // This was news
+			   midi_key_released(buffer.timestamp, &key-buffer.keysPressed.begin());
+			 return false;
+		       }
+		     });
     }
 
   close(udpSocket);
