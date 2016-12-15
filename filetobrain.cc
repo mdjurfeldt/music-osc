@@ -109,13 +109,12 @@ main (int argc, char* argv[])
 
   std::cout << "Starting to feed file" << std::endl;
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    for (int i=0; i<OurUDPProtocol::KEYBOARDSIZE; i++) {
-      keyfile >> package.keysPressed[i];
-    }
+    std::generate(package.keysPressed.begin(), package.keysPressed.end(),
+		  [&keyfile] () { double d; keyfile >> d; return d; });
 
     if (usecommandfile and (runtime->time() >= nextCommandTime)) {
-      for (int i=0; i<OurUDPProtocol::COMMANDKEYS; ++i)
-	commandfile >> package.commandKeys[i];
+      std::generate(package.commandKeys.begin(), package.commandKeys.end(),
+		    [&commandfile] () { double d; commandfile >> d; return d; });
       std::cerr << "Command at " << nextCommandTime << std::endl;
       commandfile >> nextCommandTime;
       if (commandfile.eof())

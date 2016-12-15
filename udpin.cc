@@ -100,8 +100,7 @@ main (int argc, char* argv[])
     throw std::runtime_error ("udpin: failed to send start message");
 
   // Not really necessary since static memory is zero from start
-  for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
-    buffer.keysPressed[i] = 0.0;
+  std::fill(buffer.keysPressed.begin(), buffer.keysPressed.end(), 0.0);
 
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 

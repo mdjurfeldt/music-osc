@@ -132,9 +132,8 @@ main (int argc, char* argv[])
     throw std::runtime_error ("miditoudp: bogus start message");
   double stoptime = startBuffer.stopTime;
 
-  std::for_each (std::begin (buffer.keysPressed), std::end (buffer.keysPressed),
-		 [] (double &x) { x = 0.0; });
-
+  // This is not needed since buffer is static and therefore cleared from the start
+  std::fill (buffer.keysPressed.begin(), buffer.keysPressed.end(), 0.0);
 
   RTClock clock (OurUDPProtocol::TIMESTEP);
   double t = 0.0;

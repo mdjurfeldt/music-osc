@@ -84,9 +84,8 @@ main (int args, char* argv[])
       == -1)
     throw std::runtime_error ("udpout: failed to send start message");
 
-  // Unnecessary clearing of buffer
-  for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i)
-    buffer.keysPressed[i] = 0.0;
+  // Not really necessary since static memory is zero from start
+  std::fill(buffer.keysPressed.begin(), buffer.keysPressed.end(), 0.0);
 
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
   for (; runtime->time () < stoptime; runtime->tick ()) {

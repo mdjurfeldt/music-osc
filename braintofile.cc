@@ -23,15 +23,12 @@
 #include <fstream>
 #include <music.hh>
 
-#define TIMESTEP 0.010
-#define KEYBOARD_SIZE 88
+#include "OurUDPProtocol.hh"
 
-// Use double for communication
-typedef double real;
-#define MPI_MYREAL MPI::DOUBLE
 
 MPI::Intracomm comm;
-real keyboard[KEYBOARD_SIZE];
+
+struct OurUDPProtocol::fromMusicPackage package;
 
 
 int
@@ -63,24 +60,23 @@ main (int argc, char* argv[])
   }
 
   // Declare what data we have to export
-  MUSIC::ArrayData dmap (keyboard,
-			 MPI_MYREAL,
+  MUSIC::ArrayData dmap (&package.keysPressed,
+			 MPI_DOUBLE,
 			 0,
-			 KEYBOARD_SIZE);
+			 OurUDPProtocol::KEYBOARDSIZE);
   theport->map (&dmap);
   
   double stoptime;
-  setup->config ("stoptime", &stoptime);
+  if (!setup->config ("stoptime", &stoptime))
+    throw std::runtime_error("braintofile: stoptime must be set from the music configuration file");
 
-  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, TIMESTEP);
+
+  MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    for (int i=0; i<KEYBOARD_SIZE; i++) {
-      keyfile << keyboard[i];
-      if (i < KEYBOARD_SIZE-1)
-	keyfile << " ";
-    }
-    keyfile << std::endl;
+    std::for_each(package.keysPressed.begin(), package.keysPressed.end()-1,
+		  [&keyfile] (double key) { keyfile << key << " "; });
+    keyfile << *package.keysPressed.end()-1 << std::endl;
   }
 
   runtime->finalize ();

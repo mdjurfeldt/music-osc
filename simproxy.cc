@@ -62,19 +62,26 @@ int main (int argc, char* argv[]) {
   MUSIC::Runtime* runtime = new MUSIC::Runtime (setup, OurUDPProtocol::TIMESTEP);
 
   for (; runtime->time () < stoptime; runtime->tick ()) {
-    for (int i = 0; i < OurUDPProtocol::KEYBOARDSIZE; ++i) {
-      outpackage.keysPressed[i] = package.keysPressed[i];
-      if (package.keysPressed[i] != 0.0)
-	// Press another key too
-	outpackage.keysPressed[(i + 4) % OurUDPProtocol::KEYBOARDSIZE] = 1.0;
-    }
+    // Copy input to output
+    std::copy(package.keysPressed.begin(), package.keysPressed.end(),
+	      outpackage.keysPressed.begin());
+    // Press another key, four halfnotes up
+    std::transform(package.keysPressed.begin(), package.keysPressed.end()-4,
+		   outpackage.keysPressed.begin()+4,
+		   outpackage.keysPressed.begin()+4,
+		   [] (double key, double newkey) { return (key>0.5) ? 1 : newkey; });
 
-    for (int i=0; i<OurUDPProtocol::COMMANDKEYS; ++i) {
-      if (package.commandKeys[i] != commandKeyState[i]) {
-	commandKeyState[i] = package.commandKeys[i];
-	std::cout << "commandkey " << i << "=" << commandKeyState[i] << std::endl;
-      }
-    }
+    // Print out if any command keys have changed
+    std::transform(package.commandKeys.begin(), package.commandKeys.end(),
+		   commandKeyState.begin(),
+		   commandKeyState.begin(),
+		   [] (double &key, double state) {
+		     if (key != state)
+		       std::cout << "commandkey "
+				 << &key-package.commandKeys.begin()
+				 << "=" << key << std::endl;
+		     return key;
+		   });
   }
 
   runtime->finalize ();
