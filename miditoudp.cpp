@@ -9,7 +9,7 @@
 #include <iostream>
 #include <algorithm>
 #include <thread>
-#include <rtmidi/RtMidi.h>
+#include <RtMidi.h>
 
 #include "rtclock.h"
 #include "OurUDPProtocol.hh"
@@ -131,6 +131,8 @@ main (int argc, char* argv[])
   else if (startBuffer.magicNumber != OurUDPProtocol::MAGICTOMUSIC)
     throw std::runtime_error ("miditoudp: bogus start message");
   double stoptime = startBuffer.stopTime;
+
+  std::cout << "miditoudp: UDP-connection established." << std::endl;
 
   // This is not needed since buffer is static and therefore cleared from the start
   std::fill (buffer.keysPressed.begin(), buffer.keysPressed.end(), 0.0);

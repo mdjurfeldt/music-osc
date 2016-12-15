@@ -1,7 +1,7 @@
 CXX ?= g++
 MPICXX ?= mpicxx
 
-CXXFLAGS ?= -g -O3 -DHAVE_CLOCK_NANOSLEEP
+CXXFLAGS ?= -g -O3 -std=c++11 -DHAVE_CLOCK_NANOSLEEP
 
 LOFLAGS = -I$$HOME/local/include -L$$HOME/local/lib
 PBCPNNBASE=../pbcpnn
@@ -10,9 +10,9 @@ PBCPNNBASE=../pbcpnn
 
 all: mpi server test
 
-server: udptoosc osctoudp
+server: miditoudp udptomidi
 
-mpi: udpin udpout oscin oscout
+mpi: udpin udpout
 
 test: simproxy filetobrain braintofile
 
@@ -25,11 +25,11 @@ udpout: udpout.cc OurUDPProtocol.hh
 udptoosc: udptoosc.cc
 	$(CXX) $(CXXFLAGS) -o udptoosc udptoosc.cc
 
-osctoudp: osctoudp.cc rtclock.o
+osctoudp: osctoudp.cc rtclock.o rtclock.h
 	$(CXX) $(CXXFLAGS) -o osctoudp rtclock.o osctoudp.cc -lpthread
 
 rtclock.o: rtclock.h rtclock.cpp
-	$(MPICXX) $(CXXFLAGS) -c rtclock.cpp
+	$(CXX) $(CXXFLAGS) -c rtclock.cpp
 
 simproxy: simproxy.cc OurUDPProtocol.hh
 	$(MPICXX) $(CXXFLAGS) -o simproxy simproxy.cc -lmusic
@@ -50,7 +50,7 @@ minimalbrain: minimalbrain.cpp
 	$(MPICXX) $(CXXFLAGS) -fopenmp -I ${PBCPNNBASE} -I ${PBCPNNBASE}/build-music -o minimalbrain $(LOFLAGS) minimalbrain.cpp -L ${PBCPNNBASE}/build-music/base -lpbcpnn -lmusic
 
 udptomidi: udptomidi.cpp OurUDPProtocol.hh
-	${CXX} -g -o udptomidi udptomidi.cpp -l rtmidi
+	${CXX}  $(CXXFLAGS) -I /usr/include/rtmidi -o udptomidi udptomidi.cpp -l rtmidi
 
-miditoudp: miditoudp.cpp OurUDPProtocol.hh
-	${CXX} -g -o miditoudp  rtclock.o miditoudp.cpp -l rtmidi -l pthread
+miditoudp: miditoudp.cpp OurUDPProtocol.hh rtclock.h rtclock.o
+	${CXX}  $(CXXFLAGS) -I /usr/include/rtmidi -o miditoudp  rtclock.o miditoudp.cpp -l rtmidi -l pthread

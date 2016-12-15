@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
-#include <rtmidi/RtMidi.h>
+#include <RtMidi.h>
 
 #include "OurUDPProtocol.hh"
 
@@ -103,6 +103,8 @@ main (int argc, char* argv[])
   else if (startBuffer.magicNumber != OurUDPProtocol::MAGICFROMMUSIC)
     throw std::runtime_error ("udptomidi: bogus start message");
   double stoptime = startBuffer.stopTime;
+
+  std::cout << "udptomidi: UDP-connection established." << std::endl;
 
   buffer.timestamp = 0.0;
   while (buffer.timestamp < stoptime)
