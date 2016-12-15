@@ -78,7 +78,7 @@ int main (int argc, char* argv[]) {
 		   [] (double &key, double state) {
 		     if (key != state)
 		       std::cout << "commandkey "
-				 << &key-commandKeyState.begin()
+				 << &key-package.commandKeys.begin()
 				 << "=" << key << std::endl;
 		     return key;
 		   });
